@@ -17,9 +17,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
+use tracing::warn;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::routes::input::show::show_input_page;
@@ -37,11 +37,13 @@ mod schema;
 
 // this embeds the migrations into the application binary
 // the migration path is relative to the `CARGO_MANIFEST_DIR`
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
 
 #[tokio::main]
 async fn main() {
-    dotenv().expect(".env file not found");
+    if let Err(e) = dotenv() {
+        warn!("Failed to load .env file: {}", e);
+    }
 
     tracing_subscriber::registry()
         .with(
@@ -51,7 +53,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db_url = std::env::var("DATABASE_URL").unwrap();
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     // set up connection pool
     let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
@@ -79,7 +81,7 @@ async fn main() {
         .with_state(pool);
 
     // run it with hyper
-    let addr = SocketAddr::from(([127, 0, 0, 1], 5433));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 5433));
     tracing::debug!("listening on {addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
