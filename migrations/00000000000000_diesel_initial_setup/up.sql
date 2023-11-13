@@ -21,6 +21,7 @@ CREATE TABLE "suppliers" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "mail" TEXT NOT NULL,
+    "input_page" UUID UNIQUE NOT NULL,
     "placement_type_id" INTEGER NOT NULL REFERENCES "placement_types"("id")
 );
 

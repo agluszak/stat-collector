@@ -25,9 +25,9 @@ pub struct Period {
 
 mod date_serde {
     use serde::{Deserialize, Deserializer, Serializer};
-    use time::Date;
     use time::format_description::FormatItem;
     use time::macros::format_description;
+    use time::Date;
 
     const FORMAT: &[FormatItem] = format_description!("[year].[month].[day]");
 

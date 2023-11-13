@@ -1,8 +1,11 @@
 use diesel::prelude::*;
+use serde::Serialize;
 use time::Date;
+use uuid::Uuid;
+
 use crate::schema::*;
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, Insertable)]
+#[derive(Debug, PartialEq, Serialize, Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = statistics_collectors)]
 pub struct StatisticsCollector {
     #[diesel(deserialize_as = i32)]
@@ -22,7 +25,18 @@ pub struct Period {
     pub statistics_collector_id: i32,
 }
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, Associations, Insertable)]
+#[derive(
+    Debug,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Eq,
+    Queryable,
+    Selectable,
+    Identifiable,
+    Associations,
+    Insertable,
+)]
 #[diesel(table_name = placement_types)]
 #[diesel(belongs_to(StatisticsCollector))]
 pub struct PlacementType {
@@ -40,6 +54,7 @@ pub struct Supplier {
     pub id: Option<i32>,
     pub name: String,
     pub mail: String,
+    pub input_page: Uuid,
     pub placement_type_id: i32,
 }
 

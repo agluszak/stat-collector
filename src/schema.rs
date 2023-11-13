@@ -56,6 +56,7 @@ diesel::table! {
         id -> Int4,
         name -> Text,
         mail -> Text,
+        input_page -> Uuid,
         placement_type_id -> Int4,
     }
 }
