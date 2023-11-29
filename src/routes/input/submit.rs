@@ -10,10 +10,11 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 // {copy_id}-{statistic_type_id}-{period_id}
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, ToSchema)]
 pub struct FormKey {
     pub copy_id: i32,
     pub statistic_type_id: i32,
@@ -44,7 +45,7 @@ impl<'de> Deserialize<'de> for FormKey {
 }
 
 // if string is empty, value is None
-#[derive(Debug)]
+#[derive(Debug, ToSchema)]
 pub struct FormValue(Option<i32>);
 
 impl<'de> Deserialize<'de> for FormValue {
@@ -62,7 +63,8 @@ impl<'de> Deserialize<'de> for FormValue {
     }
 }
 
-/// Submit statistics for a supplier
+/// Submits statistics for a supplier. This is not meant to be used manually.
+/// It's used by the input page.
 #[utoipa::path(
     post,
     path = "/input/{uuid}",
@@ -70,7 +72,7 @@ impl<'de> Deserialize<'de> for FormValue {
         ("uuid" = Uuid, Path, description = "Supplier id")
     ),
     request_body(
-        content = Form<BTreeMap<FormKey, FormValue>>,
+        content = BTreeMap<FormKey, FormValue>,
         content_type = "application/x-www-form-urlencoded",
         description = "Statistics to submit [copy_id]-[statistic_type_id]-[period_id]=value",
         example = json!("1-1-1=234234&1-1-2=123123&1-1-3=&1-1-4=&2-1-1=34&2-1-2=&2-1-3=3&2-1-4=")

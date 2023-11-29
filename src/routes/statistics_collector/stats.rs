@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
         ("supplier_id" = i32, Path, description = "Supplier id")
     ),
     responses(
-        (status = 200, description = "Ok", body = json::CollectedStats, content_type = "application/json"),
+        (status = 200, description = "Ok", body = CollectedStats, content_type = "application/json"),
         (status = 404, description = "No such id", content_type = "text/html")
     )
 )]

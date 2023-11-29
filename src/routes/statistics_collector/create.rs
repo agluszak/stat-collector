@@ -10,7 +10,7 @@ use crate::{db, json, schema};
 #[utoipa::path(
     post,
     path = "/statistics_collector",
-    request_body = json::StatisticsCollector,
+    request_body = StatisticsCollector,
     responses(
         (status = 200, description = "Ok"),
     )

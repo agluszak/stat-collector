@@ -63,7 +63,15 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
         submit_input,
     ),
     components(
-        schemas(json::Period, json::PlacementType, json::StatisticsCollector, json::Supplier, json::CollectedStats)
+        schemas(
+            json::Period,
+            json::PlacementType,
+            json::StatisticsCollector,
+            json::Supplier,
+            json::CollectedStats,
+            routes::input::submit::FormKey,
+            routes::input::submit::FormValue,
+        )
     ),
     tags(
         (name = "Stat collector")
