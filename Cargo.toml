@@ -7,18 +7,22 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.6", features = ["form", "macros"] }
+anyhow = "1"
 deadpool-diesel = { version = "0.5", features = ["postgres"] }
 diesel = { version = "2", features = ["postgres", "time", "uuid"] }
 diesel_migrations = "2"
 dotenvy = "0.15"
+itertools = "0.12"
 maud = { version = "0.25", features = ["axum"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 serde_with = "3"
 time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
 tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.4", features = ["normalize-path"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["serde", "v7"]}
-
-
+utoipa = { version = "4", features = ["axum_extras", "time", "uuid"] }
+utoipa-swagger-ui = { version = "4", features = ["axum"] }

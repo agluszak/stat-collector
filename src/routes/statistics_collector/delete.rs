@@ -5,6 +5,17 @@ use diesel::prelude::*;
 use crate::routes::util::internal_error;
 use crate::schema;
 
+/// Deletes a statistics collector
+#[utoipa::path(
+    delete,
+    path = "/statistics_collector/{id}",
+    params(
+        ("id" = i32, Path, description = "Statistics collector id")
+    ),
+    responses(
+        (status = 200, description = "Ok"),
+    )
+)]
 pub async fn delete_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(id): Path<i32>,

@@ -6,6 +6,15 @@ use uuid::Uuid;
 use crate::routes::util::internal_error;
 use crate::{db, json, schema};
 
+/// Creates a new statistics collector
+#[utoipa::path(
+    post,
+    path = "/statistics_collector",
+    request_body = json::StatisticsCollector,
+    responses(
+        (status = 200, description = "Ok"),
+    )
+)]
 pub async fn create_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Json(statistics_collector): Json<json::StatisticsCollector>,

@@ -62,6 +62,24 @@ impl<'de> Deserialize<'de> for FormValue {
     }
 }
 
+/// Submit statistics for a supplier
+#[utoipa::path(
+    post,
+    path = "/input/{uuid}",
+    params(
+        ("uuid" = Uuid, Path, description = "Supplier id")
+    ),
+    request_body(
+        content = Form<BTreeMap<FormKey, FormValue>>,
+        content_type = "application/x-www-form-urlencoded",
+        description = "Statistics to submit [copy_id]-[statistic_type_id]-[period_id]=value",
+        example = json!("1-1-1=234234&1-1-2=123123&1-1-3=&1-1-4=&2-1-1=34&2-1-2=&2-1-3=3&2-1-4=")
+    ),
+    responses(
+        (status = 200, description = "Ok", content_type = "text/html"),
+        (status = 404, description = "No such id", content_type = "text/html")
+    )
+)]
 #[axum::debug_handler]
 pub async fn submit_input(
     State(pool): State<deadpool_diesel::postgres::Pool>,

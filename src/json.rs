@@ -1,8 +1,10 @@
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::BTreeMap;
 use time::Date;
+use utoipa::ToSchema;
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct StatisticsCollector {
     #[serde(rename = "Name")]
     pub name: String,
@@ -12,14 +14,16 @@ pub struct StatisticsCollector {
     pub placement_types: Vec<PlacementType>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct Period {
     pub name: String,
     #[serde(rename = "startDate")]
     #[serde(with = "date_serde")]
+    #[schema(example = "2021.01.01")]
     pub start_date: Date,
     #[serde(rename = "endDate")]
     #[serde(with = "date_serde")]
+    #[schema(example = "2021.12.25")]
     pub end_date: Date,
 }
 
@@ -48,7 +52,7 @@ mod date_serde {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct PlacementType {
     pub name: String,
     pub suppliers: Vec<Supplier>,
@@ -56,8 +60,21 @@ pub struct PlacementType {
     pub copies: Vec<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct Supplier {
     pub name: String,
     pub mail: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct CollectedStats {
+    pub periods: Vec<Period>,
+    pub copies: Vec<String>,
+    /// Outer index is copy, inner index is date
+    /// In other words, given dates 1, 2 and copies A, B:
+    /// stats[0][0] is the number of copies of A on date 1
+    /// stats[0][1] is the number of copies of A on date 2
+    /// stats[1][0] is the number of copies of B on date 1
+    /// stats[1][1] is the number of copies of B on date 2
+    pub stats: BTreeMap<String, Vec<Vec<i32>>>,
 }

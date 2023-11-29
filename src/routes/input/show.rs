@@ -19,6 +19,18 @@ struct InputPageData {
     values: BTreeMap<FormKey, i32>,
 }
 
+/// Shows the input page for a supplier
+#[utoipa::path(
+    get,
+    path = "/input/{uuid}",
+    params(
+        ("uuid" = Uuid, Path, description = "Supplier id")
+    ),
+    responses(
+        (status = 200, description = "Ok", content_type = "text/html"),
+        (status = 404, description = "No such id", content_type = "text/html")
+    )
+)]
 pub async fn show_input_page(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(uuid): Path<Uuid>,

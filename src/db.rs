@@ -1,3 +1,4 @@
+use crate::json;
 use diesel::prelude::*;
 use serde::Serialize;
 use time::Date;
@@ -23,6 +24,16 @@ pub struct Period {
     pub start: Date,
     pub end: Date,
     pub statistics_collector_id: i32,
+}
+
+impl Period {
+    pub fn as_json(&self) -> json::Period {
+        json::Period {
+            name: self.name.clone(),
+            start_date: self.start,
+            end_date: self.end,
+        }
+    }
 }
 
 #[derive(
@@ -76,6 +87,12 @@ pub struct Copy {
     pub id: Option<i32>,
     pub name: String,
     pub placement_type_id: i32,
+}
+
+impl Copy {
+    pub fn as_json(&self) -> String {
+        self.name.clone()
+    }
 }
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, Associations, Insertable)]

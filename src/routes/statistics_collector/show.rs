@@ -12,6 +12,19 @@ struct ShowCollectorData {
     collector: db::StatisticsCollector,
     types_suppliers: BTreeMap<db::PlacementType, Vec<db::Supplier>>,
 }
+
+/// Displays a page with all suppliers for a statistics collector
+#[utoipa::path(
+    get,
+    path = "/statistics_collector/{id}",
+    params(
+        ("id" = i32, Path, description = "Statistics collector id")
+    ),
+    responses(
+        (status = 200, description = "Ok", content_type = "text/html"),
+        (status = 404, description = "No such id", content_type = "text/html")
+    )
+)]
 pub async fn show_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(id): Path<i32>,
