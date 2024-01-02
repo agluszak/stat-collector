@@ -24,10 +24,10 @@ RUN apt-get update && \
 # source code into the container. Once built, copy the executable to an
 # output directory before the cache mounted /app/target is unmounted.
 RUN --mount=type=bind,source=src,target=src \
-    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
-    --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
-    --mount=type=bind,source=.cargo/config.toml,target=.cargo/config.toml \
-    --mount=type=bind,source=db/migrations,target=db/migrations \
+    --mount=type=bind,source=Cargo.toml,target=/app/Cargo.toml \
+    --mount=type=bind,source=Cargo.lock,target=/app/Cargo.lock \
+    --mount=type=bind,source=.cargo/config.toml,target=/app/.cargo/config.toml \
+    --mount=type=bind,source=db/migrations,target=/app/db/migrations \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
     cargo build --locked --release && cp ./target/release/$APP_NAME /bin/server
