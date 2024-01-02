@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   server:
-    image: "ghcr.io/agluszak/stat-collector:latest"
+    image: "ghcr.io/agluszak/stat-collector:main"
     ports:
       - "5433:5433"
     depends_on:
