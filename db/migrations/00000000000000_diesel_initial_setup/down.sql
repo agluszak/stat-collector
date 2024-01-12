@@ -1,4 +1,3 @@
-DROP TABLE "input_pages" CASCADE;
 DROP TABLE "statistics" CASCADE;
 DROP TABLE "copies" CASCADE;
 DROP TABLE "statistic_types" CASCADE;

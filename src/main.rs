@@ -19,16 +19,19 @@ use axum::{
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
+use tokio::net::TcpListener;
 use tower_http::normalize_path::NormalizePathLayer;
 use tracing::warn;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::routes::input::show::__path_show_input_page;
-use crate::routes::input::show::show_input_page;
-use crate::routes::input::submit::__path_submit_input;
-use crate::routes::input::submit::submit_input;
+use crate::routes::supplier::show::__path_show_input_page;
+use crate::routes::supplier::show::show_input_page;
+use crate::routes::supplier::submit::__path_submit_input;
+use crate::routes::supplier::submit::submit_input;
+use crate::routes::supplier::stats::__path_get_supplier_stats;
+use crate::routes::supplier::stats::get_supplier_stats;
 use crate::routes::main_page;
 use crate::routes::statistics_collector::create::__path_create_statistics_collector;
 use crate::routes::statistics_collector::create::create_statistics_collector;
@@ -38,8 +41,9 @@ use crate::routes::statistics_collector::list::__path_list_statistics_collectors
 use crate::routes::statistics_collector::list::list_statistics_collectors;
 use crate::routes::statistics_collector::show::__path_show_statistics_collector;
 use crate::routes::statistics_collector::show::show_statistics_collector;
-use crate::routes::statistics_collector::stats::__path_get_stats;
-use crate::routes::statistics_collector::stats::get_stats;
+use crate::routes::statistics_collector::stats::__path_get_collector_stats;
+use crate::routes::statistics_collector::stats::get_collector_stats;
+
 
 mod db;
 mod json;
@@ -58,9 +62,10 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
         list_statistics_collectors,
         delete_statistics_collector,
         show_statistics_collector,
-        get_stats,
+        get_supplier_stats,
         show_input_page,
         submit_input,
+        get_collector_stats,
     ),
     components(
         schemas(
@@ -69,8 +74,8 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
             json::StatisticsCollector,
             json::Supplier,
             json::CollectedStats,
-            routes::input::submit::FormKey,
-            routes::input::submit::FormValue,
+            routes::supplier::submit::FormKey,
+            routes::supplier::submit::FormValue,
         )
     ),
     tags(
@@ -120,9 +125,10 @@ async fn main() {
         .route("/statistics_collector", get(list_statistics_collectors))
         .route("/statistics_collector", delete(delete_statistics_collector))
         .route("/statistics_collector/:id", get(show_statistics_collector))
-        .route("/statistics_collector/:id/stats", get(get_stats))
-        .route("/input/:id", get(show_input_page))
-        .route("/input/:id", post(submit_input))
+        .route("/statistics_collector/:id/stats", get(get_collector_stats))
+        .route("/supplier/:id/stats", get(get_supplier_stats))
+        .route("/supplier/:id", get(show_input_page))
+        .route("/supplier/:id", post(submit_input))
         .with_state(pool);
 
     let collector = collector.layer(NormalizePathLayer::trim_trailing_slash());
@@ -135,9 +141,9 @@ async fn main() {
 
     // run it with hyper
     let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 5433));
+    let listener = TcpListener::bind(addr).await.unwrap();
     tracing::debug!("listening on {addr}");
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    axum::serve(listener, app.into_make_service())
         .await
         .unwrap();
 }

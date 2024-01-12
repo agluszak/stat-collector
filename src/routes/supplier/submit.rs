@@ -10,15 +10,26 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-// {copy_id}-{statistic_type_id}-{period_id}
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, ToSchema)]
+// {copy_id},{statistic_type_id},{period_id}
+#[derive(Debug, Ord, Clone, Copy, PartialOrd, Eq, PartialEq, ToSchema)]
 pub struct FormKey {
-    pub copy_id: i32,
-    pub statistic_type_id: i32,
-    pub period_id: i32,
+    pub copy_id: Uuid,
+    pub statistic_type_id: Uuid,
+    pub period_id: Uuid,
+}
+
+impl Display for FormKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{},{},{}",
+            self.copy_id, self.statistic_type_id, self.period_id
+        )
+    }
 }
 
 impl<'de> Deserialize<'de> for FormKey {
@@ -27,14 +38,14 @@ impl<'de> Deserialize<'de> for FormKey {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let parts = s.split('-').collect::<Vec<&str>>();
+        let parts = s.split(',').collect::<Vec<&str>>();
         if parts.len() != 3 {
             return Err(serde::de::Error::custom("invalid form key"));
         }
 
-        let copy_id = parts[0].parse::<i32>().map_err(serde::de::Error::custom)?;
-        let statistic_type_id = parts[1].parse::<i32>().map_err(serde::de::Error::custom)?;
-        let period_id = parts[2].parse::<i32>().map_err(serde::de::Error::custom)?;
+        let copy_id = parts[0].parse::<Uuid>().map_err(serde::de::Error::custom)?;
+        let statistic_type_id = parts[1].parse::<Uuid>().map_err(serde::de::Error::custom)?;
+        let period_id = parts[2].parse::<Uuid>().map_err(serde::de::Error::custom)?;
 
         Ok(FormKey {
             period_id,
@@ -64,10 +75,10 @@ impl<'de> Deserialize<'de> for FormValue {
 }
 
 /// Submits statistics for a supplier. This is not meant to be used manually.
-/// It's used by the input page.
+/// It's used by the supplier page.
 #[utoipa::path(
     post,
-    path = "/input/{uuid}",
+    path = "/supplier/{uuid}",
     params(
         ("uuid" = Uuid, Path, description = "Supplier id")
     ),
@@ -85,18 +96,11 @@ impl<'de> Deserialize<'de> for FormValue {
 #[axum::debug_handler]
 pub async fn submit_input(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(uuid): Path<Uuid>,
+    Path(supplier_id): Path<Uuid>,
     Form(form): Form<BTreeMap<FormKey, FormValue>>,
 ) -> Result<Redirect, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     conn.interact(move |conn| {
-        // Find supplier id
-        let supplier_id = schema::suppliers::table
-            .filter(schema::suppliers::input_page.eq(uuid))
-            .select(schema::suppliers::id)
-            .first::<i32>(conn)
-            .map_err(internal_error)?;
-
         let data: Vec<db::Statistic> = form
             .iter()
             .filter_map(|(k, v)| {
@@ -129,5 +133,5 @@ pub async fn submit_input(
     .await
     .map_err(internal_error)??;
 
-    Ok(Redirect::to(&format!("/input/{}", uuid)))
+    Ok(Redirect::to(&format!("/supplier/{}", supplier_id)))
 }

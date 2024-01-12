@@ -4,6 +4,7 @@ use diesel::prelude::*;
 
 use maud::{html, Markup};
 use std::collections::BTreeMap;
+use uuid::Uuid;
 
 use crate::routes::util::internal_error;
 use crate::{db, schema};
@@ -18,7 +19,7 @@ struct ShowCollectorData {
     get,
     path = "/statistics_collector/{id}",
     params(
-        ("id" = i32, Path, description = "Statistics collector id")
+        ("id" = Uuid, Path, description = "Statistics collector id")
     ),
     responses(
         (status = 200, description = "Ok", content_type = "text/html"),
@@ -27,7 +28,7 @@ struct ShowCollectorData {
 )]
 pub async fn show_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
 ) -> Result<Markup, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     let data = conn
@@ -68,7 +69,7 @@ pub async fn show_statistics_collector(
             h2 { (placement_type.name) }
             ul {
                 @for supplier in suppliers {
-                    li { a href=(format!("/input/{}", supplier.input_page)) { (supplier.name) } }
+                    li { a href=(format!("/supplier/{}", supplier.id)) { (supplier.name) } }
                 }
             }
         }

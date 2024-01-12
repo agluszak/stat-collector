@@ -5,7 +5,7 @@ use maud::{html, Markup};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use crate::routes::input::submit::FormKey;
+use crate::routes::supplier::submit::FormKey;
 use crate::routes::util::internal_error;
 use crate::{db, render_html, schema};
 
@@ -19,10 +19,10 @@ struct InputPageData {
     values: BTreeMap<FormKey, i32>,
 }
 
-/// Shows the input page for a supplier
+/// Shows the supplier page for a supplier
 #[utoipa::path(
     get,
-    path = "/input/{uuid}",
+    path = "/supplier/{uuid}",
     params(
         ("uuid" = Uuid, Path, description = "Supplier id")
     ),
@@ -33,20 +33,20 @@ struct InputPageData {
 )]
 pub async fn show_input_page(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(uuid): Path<Uuid>,
+    Path(supplier_id): Path<Uuid>,
 ) -> Result<Markup, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     let input_page_data = conn
         .interact(move |conn| {
             let (placement_type, supplier) = schema::suppliers::table
-                .filter(schema::suppliers::input_page.eq(uuid))
+                .filter(schema::suppliers::id.eq(supplier_id))
                 .inner_join(schema::placement_types::table)
                 .select((db::PlacementType::as_select(), db::Supplier::as_select()))
                 .first(conn)
                 .map_err(internal_error)?;
 
-            let (collector_id, collector_name): (i32, String) = schema::placement_types::table
-                .filter(schema::placement_types::id.eq(placement_type.id.unwrap()))
+            let (collector_id, collector_name): (Uuid, String) = schema::placement_types::table
+                .filter(schema::placement_types::id.eq(placement_type.id))
                 .inner_join(schema::statistics_collectors::table)
                 .select((
                     schema::statistics_collectors::id,
@@ -62,19 +62,19 @@ pub async fn show_input_page(
                 .map_err(internal_error)?;
 
             let copies = schema::copies::table
-                .filter(schema::copies::placement_type_id.eq(collector_id))
+                .filter(schema::copies::placement_type_id.eq(placement_type.id))
                 .select(db::Copy::as_select())
                 .load(conn)
                 .map_err(internal_error)?;
 
             let statistic_types = schema::statistic_types::table
-                .filter(schema::statistic_types::placement_type_id.eq(collector_id))
+                .filter(schema::statistic_types::placement_type_id.eq(placement_type.id))
                 .select(db::StatisticType::as_select())
                 .load(conn)
                 .map_err(internal_error)?;
 
             let values = schema::statistics::table
-                .filter(schema::statistics::supplier_id.eq(supplier.id.unwrap()))
+                .filter(schema::statistics::supplier_id.eq(supplier.id))
                 .select(db::Statistic::as_select())
                 .load(conn)
                 .map_err(internal_error)?
@@ -119,10 +119,10 @@ pub async fn show_input_page(
             // Table should look like this:
             // | (empty) | period 1 | period 1 | period 2 | period 2 |
             // | (empty)  | stat 1   | stat 2   | stat 1   | stat 2   |
-            // | copy 1   | input    | input    | input    | input    |
-            // | copy 2   | input    | input    | input    | input    |
+            // | copy 1   | supplier    | supplier    | supplier    | supplier    |
+            // | copy 2   | supplier    | supplier    | supplier    | supplier    |
 
-            form method="post" action=(format!("/input/{}", uuid)) {
+            form method="post" action=(format!("/supplier/{}", supplier_id)) {
                 table {
                     tr {
                         th { "" }
@@ -143,14 +143,15 @@ pub async fn show_input_page(
                             th { (copy.name) }
                             @for period in &input_page_data.periods {
                                 @for statistic_type in &input_page_data.statistic_types {
-                                    @let name = format!("{}-{}-{}", copy.id.unwrap(), statistic_type.id.unwrap(), period.id.unwrap());
-                                    @let value = input_page_data.values.get(&FormKey {
-                                        period_id: period.id.unwrap(),
-                                        statistic_type_id: statistic_type.id.unwrap(),
-                                        copy_id: copy.id.unwrap(),
-                                    });
+                                    @let form_key = FormKey {
+                                        period_id: period.id,
+                                        statistic_type_id: statistic_type.id,
+                                        copy_id: copy.id,
+                                    };
+                                    @let name = format!("{}", form_key);
+                                    @let value = input_page_data.values.get(&form_key).copied().unwrap_or(-1);
                                     td {
-                                        input type="number" name=(name) id=(name) value=[value];
+                                        input type="number" name=(name) id=(name) value=(value);
                                     }
                                 }
                             }

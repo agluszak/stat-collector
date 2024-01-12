@@ -2,62 +2,61 @@
 
 diesel::table! {
     copies (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
-        placement_type_id -> Int4,
+        placement_type_id -> Uuid,
     }
 }
 
 diesel::table! {
     periods (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
         start -> Date,
         end -> Date,
-        statistics_collector_id -> Int4,
+        statistics_collector_id -> Uuid,
     }
 }
 
 diesel::table! {
     placement_types (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
-        statistics_collector_id -> Int4,
+        statistics_collector_id -> Uuid,
     }
 }
 
 diesel::table! {
     statistic_types (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
-        placement_type_id -> Int4,
+        placement_type_id -> Uuid,
     }
 }
 
 diesel::table! {
     statistics (period_id, supplier_id, statistic_type_id, copy_id) {
-        period_id -> Int4,
-        supplier_id -> Int4,
-        statistic_type_id -> Int4,
-        copy_id -> Int4,
+        period_id -> Uuid,
+        supplier_id -> Uuid,
+        statistic_type_id -> Uuid,
+        copy_id -> Uuid,
         value -> Int4,
     }
 }
 
 diesel::table! {
     statistics_collectors (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
     }
 }
 
 diesel::table! {
     suppliers (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
         mail -> Text,
-        input_page -> Uuid,
-        placement_type_id -> Int4,
+        placement_type_id -> Uuid,
     }
 }
 

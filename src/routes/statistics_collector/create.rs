@@ -22,24 +22,26 @@ pub async fn create_statistics_collector(
     let conn = pool.get().await.map_err(internal_error)?;
     conn.interact(move |conn| {
         conn.transaction(|conn| {
+            let collector_id = Uuid::new_v4();
+
             let db_statistics_collector = db::StatisticsCollector {
-                id: None,
+                id: collector_id,
                 name: statistics_collector.name.clone(),
             };
-            let collector_id = diesel::insert_into(schema::statistics_collectors::table)
+            
+            diesel::insert_into(schema::statistics_collectors::table)
                 .values(&db_statistics_collector)
-                .returning(schema::statistics_collectors::id)
                 .execute(conn)?;
 
             let db_periods = statistics_collector
                 .periods
                 .iter()
                 .map(|period| db::Period {
-                    id: None,
+                    id: Uuid::new_v4(),
                     name: period.name.clone(),
                     start: period.start_date,
                     end: period.end_date,
-                    statistics_collector_id: collector_id as i32,
+                    statistics_collector_id: collector_id,
                 })
                 .collect::<Vec<db::Period>>();
 
@@ -51,9 +53,9 @@ pub async fn create_statistics_collector(
                 .placement_types
                 .iter()
                 .map(|placement_type| db::PlacementType {
-                    id: None,
+                    id: Uuid::new_v4(),
                     name: placement_type.name.clone(),
-                    statistics_collector_id: collector_id as i32,
+                    statistics_collector_id: collector_id,
                 })
                 .collect::<Vec<db::PlacementType>>();
 
@@ -75,14 +77,11 @@ pub async fn create_statistics_collector(
                                     db_placement_type.name == placement_type.name
                                 })
                                 .unwrap()
-                                .id
-                                .unwrap();
-                            let input_page = Uuid::now_v7();
+                                .id;
                             db::Supplier {
-                                id: None,
+                                id: Uuid::new_v4(),
                                 name: supplier.name.clone(),
                                 mail: supplier.mail.clone(),
-                                input_page,
                                 placement_type_id,
                             }
                         })
@@ -108,10 +107,9 @@ pub async fn create_statistics_collector(
                                     db_placement_type.name == placement_type.name
                                 })
                                 .unwrap()
-                                .id
-                                .unwrap();
+                                .id;
                             db::StatisticType {
-                                id: None,
+                                id: Uuid::new_v4(),
                                 name: statistic.clone(),
                                 placement_type_id,
                             }
@@ -138,10 +136,9 @@ pub async fn create_statistics_collector(
                                     db_placement_type.name == placement_type.name
                                 })
                                 .unwrap()
-                                .id
-                                .unwrap();
+                                .id;
                             db::Copy {
-                                id: None,
+                                id: Uuid::new_v4(),
                                 name: copy.clone(),
                                 placement_type_id,
                             }
