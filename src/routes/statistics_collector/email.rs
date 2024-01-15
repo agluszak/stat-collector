@@ -1,11 +1,11 @@
 use axum::extract::Path;
-use axum::{extract::State, response::Json};
+use axum::{extract::State};
 use diesel::prelude::*;
 
-use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
+use crate::db::{StatCollectorId};
 
 use crate::errors::AppError;
-use crate::{db, json, schema};
+use crate::{db, schema};
 use crate::logic::email::Mailer;
 
 /// Sends reminder emails to all suppliers of a statistics collector

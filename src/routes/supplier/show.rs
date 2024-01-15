@@ -3,7 +3,7 @@ use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
-use uuid::Uuid;
+
 
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;

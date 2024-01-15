@@ -22,7 +22,6 @@ services:
      - POSTGRES_DB=stat-collector
      - POSTGRES_USER=postgres
      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
-    ports:
     expose:
      - 5432
     healthcheck:

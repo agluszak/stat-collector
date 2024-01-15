@@ -12,7 +12,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
-use lettre::Address;
+
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use tokio::net::TcpListener;
