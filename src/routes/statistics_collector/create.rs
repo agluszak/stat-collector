@@ -1,8 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::Json};
 use diesel::prelude::*;
 
-use uuid::Uuid;
-
+use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
 use crate::routes::util::internal_error;
 use crate::{db, json, schema};
 
@@ -22,13 +21,13 @@ pub async fn create_statistics_collector(
     let conn = pool.get().await.map_err(internal_error)?;
     conn.interact(move |conn| {
         conn.transaction(|conn| {
-            let collector_id = Uuid::new_v4();
+            let collector_id = StatCollectorId::new();
 
             let db_statistics_collector = db::StatisticsCollector {
                 id: collector_id,
                 name: statistics_collector.name.clone(),
             };
-            
+
             diesel::insert_into(schema::statistics_collectors::table)
                 .values(&db_statistics_collector)
                 .execute(conn)?;
@@ -37,7 +36,7 @@ pub async fn create_statistics_collector(
                 .periods
                 .iter()
                 .map(|period| db::Period {
-                    id: Uuid::new_v4(),
+                    id: PeriodId::new(),
                     name: period.name.clone(),
                     start: period.start_date,
                     end: period.end_date,
@@ -53,7 +52,7 @@ pub async fn create_statistics_collector(
                 .placement_types
                 .iter()
                 .map(|placement_type| db::PlacementType {
-                    id: Uuid::new_v4(),
+                    id: PlacementTypeId::new(),
                     name: placement_type.name.clone(),
                     statistics_collector_id: collector_id,
                 })
@@ -79,7 +78,7 @@ pub async fn create_statistics_collector(
                                 .unwrap()
                                 .id;
                             db::Supplier {
-                                id: Uuid::new_v4(),
+                                id: SupplierId::new(),
                                 name: supplier.name.clone(),
                                 mail: supplier.mail.clone(),
                                 placement_type_id,
@@ -109,7 +108,7 @@ pub async fn create_statistics_collector(
                                 .unwrap()
                                 .id;
                             db::StatisticType {
-                                id: Uuid::new_v4(),
+                                id: StatisticTypeId::new(),
                                 name: statistic.clone(),
                                 placement_type_id,
                             }
@@ -138,7 +137,7 @@ pub async fn create_statistics_collector(
                                 .unwrap()
                                 .id;
                             db::Copy {
-                                id: Uuid::new_v4(),
+                                id: CopyId::new(),
                                 name: copy.clone(),
                                 placement_type_id,
                             }

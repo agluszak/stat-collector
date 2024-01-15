@@ -8,4 +8,3 @@ where
 {
     (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
-

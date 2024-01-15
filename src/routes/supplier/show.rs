@@ -5,6 +5,7 @@ use maud::{html, Markup};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
+use crate::db::SupplierId;
 use crate::routes::supplier::submit::FormKey;
 use crate::routes::util::internal_error;
 use crate::{db, render_html, schema};
@@ -33,7 +34,7 @@ struct InputPageData {
 )]
 pub async fn show_input_page(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(supplier_id): Path<Uuid>,
+    Path(supplier_id): Path<SupplierId>,
 ) -> Result<Markup, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     let input_page_data = conn

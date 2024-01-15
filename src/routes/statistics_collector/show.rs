@@ -4,8 +4,8 @@ use diesel::prelude::*;
 
 use maud::{html, Markup};
 use std::collections::BTreeMap;
-use uuid::Uuid;
 
+use crate::db::StatCollectorId;
 use crate::routes::util::internal_error;
 use crate::{db, schema};
 
@@ -28,7 +28,7 @@ struct ShowCollectorData {
 )]
 pub async fn show_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<StatCollectorId>,
 ) -> Result<Markup, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     let data = conn

@@ -1,3 +1,4 @@
+use crate::db::{CopyId, PeriodId, StatisticTypeId, SupplierId};
 use crate::routes::util::internal_error;
 use crate::{db, schema};
 use axum::extract::{Path, State};
@@ -17,9 +18,9 @@ use uuid::Uuid;
 // {copy_id},{statistic_type_id},{period_id}
 #[derive(Debug, Ord, Clone, Copy, PartialOrd, Eq, PartialEq, ToSchema)]
 pub struct FormKey {
-    pub copy_id: Uuid,
-    pub statistic_type_id: Uuid,
-    pub period_id: Uuid,
+    pub copy_id: CopyId,
+    pub statistic_type_id: StatisticTypeId,
+    pub period_id: PeriodId,
 }
 
 impl Display for FormKey {
@@ -43,14 +44,17 @@ impl<'de> Deserialize<'de> for FormKey {
             return Err(serde::de::Error::custom("invalid form key"));
         }
 
-        let copy_id = parts[0].parse::<Uuid>().map_err(serde::de::Error::custom)?;
-        let statistic_type_id = parts[1].parse::<Uuid>().map_err(serde::de::Error::custom)?;
-        let period_id = parts[2].parse::<Uuid>().map_err(serde::de::Error::custom)?;
+        let copy_id =
+            CopyId::from_uuid(parts[0].parse::<Uuid>().map_err(serde::de::Error::custom)?);
+        let statistic_type_id =
+            StatisticTypeId::from_uuid(parts[1].parse::<Uuid>().map_err(serde::de::Error::custom)?);
+        let period_id =
+            PeriodId::from_uuid(parts[2].parse::<Uuid>().map_err(serde::de::Error::custom)?);
 
         Ok(FormKey {
-            period_id,
             copy_id,
             statistic_type_id,
+            period_id,
         })
     }
 }
@@ -96,7 +100,7 @@ impl<'de> Deserialize<'de> for FormValue {
 #[axum::debug_handler]
 pub async fn submit_input(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(supplier_id): Path<Uuid>,
+    Path(supplier_id): Path<SupplierId>,
     Form(form): Form<BTreeMap<FormKey, FormValue>>,
 ) -> Result<Redirect, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;

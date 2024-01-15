@@ -1,13 +1,15 @@
-use crate::routes::util::{internal_error};
-use crate::{db, json, schema};
+use std::collections::BTreeMap;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use diesel::prelude::*;
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashMap};
-use uuid::Uuid;
+
+use crate::db::{StatCollectorId, SupplierId};
 use crate::routes::supplier::stats::stats_for_supplier;
+use crate::routes::util::internal_error;
+use crate::{db, json, schema};
 
 /// Gets statistics for a collector
 #[utoipa::path(
@@ -23,27 +25,35 @@ responses(
 )]
 pub async fn get_collector_stats(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(collector_id): Path<Uuid>,
-) -> Result<Json<BTreeMap<Uuid, json::CollectedStats>>, (StatusCode, String)> {
-    // returns Map<CollectorId, CollectedStats>
+    Path(collector_id): Path<StatCollectorId>,
+) -> Result<Json<BTreeMap<SupplierId, json::CollectedStats>>, (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
-    let suppliers = conn
+    let map = conn
         .interact(move |conn| {
-                schema::suppliers::table
-                    .filter(schema::suppliers::.eq(collector_id))
-                    .load::<db::Supplier>(conn)
-                    .map_err(internal_error)
-            }).await
-        .map_err(internal_error)??;
+            let suppliers = schema::suppliers::table
+                .select(schema::suppliers::id)
+                .filter(
+                    schema::suppliers::placement_type_id.eq_any(
+                        schema::placement_types::table
+                            .select(schema::placement_types::id)
+                            .filter(
+                                schema::placement_types::statistics_collector_id.eq(collector_id),
+                            ),
+                    ),
+                )
+                .load::<db::SupplierId>(conn)?;
 
-    let mut map = BTreeMap::new();
+            let mut stats = BTreeMap::new();
 
-    for supplier in suppliers {
-        let stats = conn.interact(move |conn| {
-            stats_for_supplier(conn, supplier.id).map_err(internal_error)
-        }).await.map_err(internal_error)??;
-        map.insert(supplier.id, stats);
-    }
+            for s in suppliers {
+                stats.insert(s, stats_for_supplier(conn, s)?);
+            }
+
+            Ok::<_, diesel::result::Error>(stats)
+        })
+        .await
+        .map_err(internal_error)?
+        .map_err(internal_error)?;
 
     Ok(Json(map))
 }

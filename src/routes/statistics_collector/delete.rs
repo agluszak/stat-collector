@@ -1,7 +1,7 @@
+use crate::db::StatCollectorId;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use diesel::prelude::*;
-use uuid::Uuid;
 
 use crate::routes::util::internal_error;
 use crate::schema;
@@ -19,7 +19,7 @@ use crate::schema;
 )]
 pub async fn delete_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<StatCollectorId>,
 ) -> Result<(), (StatusCode, String)> {
     let conn = pool.get().await.map_err(internal_error)?;
     conn.interact(move |conn| {

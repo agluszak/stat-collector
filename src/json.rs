@@ -66,6 +66,7 @@ pub struct Supplier {
     pub mail: String,
 }
 
+/// Stats from a supplier
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct CollectedStats {
     pub periods: Vec<Period>,

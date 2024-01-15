@@ -26,12 +26,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::routes::supplier::show::__path_show_input_page;
-use crate::routes::supplier::show::show_input_page;
-use crate::routes::supplier::submit::__path_submit_input;
-use crate::routes::supplier::submit::submit_input;
-use crate::routes::supplier::stats::__path_get_supplier_stats;
-use crate::routes::supplier::stats::get_supplier_stats;
 use crate::routes::main_page;
 use crate::routes::statistics_collector::create::__path_create_statistics_collector;
 use crate::routes::statistics_collector::create::create_statistics_collector;
@@ -43,7 +37,12 @@ use crate::routes::statistics_collector::show::__path_show_statistics_collector;
 use crate::routes::statistics_collector::show::show_statistics_collector;
 use crate::routes::statistics_collector::stats::__path_get_collector_stats;
 use crate::routes::statistics_collector::stats::get_collector_stats;
-
+use crate::routes::supplier::show::__path_show_input_page;
+use crate::routes::supplier::show::show_input_page;
+use crate::routes::supplier::stats::__path_get_supplier_stats;
+use crate::routes::supplier::stats::get_supplier_stats;
+use crate::routes::supplier::submit::__path_submit_input;
+use crate::routes::supplier::submit::submit_input;
 
 mod db;
 mod json;
