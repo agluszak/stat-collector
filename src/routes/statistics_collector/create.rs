@@ -1,8 +1,9 @@
-use axum::{extract::State, http::StatusCode, response::Json};
+use axum::{extract::State, response::Json};
 use diesel::prelude::*;
 
 use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
-use crate::routes::util::internal_error;
+
+use crate::routes::errors::AppError;
 use crate::{db, json, schema};
 
 /// Creates a new statistics collector
@@ -17,8 +18,8 @@ use crate::{db, json, schema};
 pub async fn create_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Json(statistics_collector): Json<json::StatisticsCollector>,
-) -> Result<(), (StatusCode, String)> {
-    let conn = pool.get().await.map_err(internal_error)?;
+) -> Result<(), AppError> {
+    let conn = pool.get().await?;
     conn.interact(move |conn| {
         conn.transaction(|conn| {
             let collector_id = StatCollectorId::new();
@@ -26,7 +27,32 @@ pub async fn create_statistics_collector(
             let db_statistics_collector = db::StatisticsCollector {
                 id: collector_id,
                 name: statistics_collector.name.clone(),
+                client: statistics_collector.client.clone(),
             };
+
+            // Ensure that (name, client) tuple is unique
+            let existing = schema::statistics_collectors::table
+                .select(schema::statistics_collectors::id)
+                .filter(
+                    schema::statistics_collectors::name
+                        .eq(&db_statistics_collector.name)
+                        .and(
+                            schema::statistics_collectors::client
+                                .eq(&db_statistics_collector.client),
+                        ),
+                )
+                .first::<StatCollectorId>(conn)
+                .optional()?;
+
+            if let Some(existing) = existing {
+                return Err(AppError::Conflict {
+                    resource: format!(
+                        "statistics collector with name {} and client {}",
+                        db_statistics_collector.name, db_statistics_collector.client
+                    ),
+                    id: existing.to_string(),
+                });
+            }
 
             diesel::insert_into(schema::statistics_collectors::table)
                 .values(&db_statistics_collector)
@@ -153,8 +179,6 @@ pub async fn create_statistics_collector(
             Ok(())
         })
     })
-    .await
-    .map_err(internal_error)?
-    .map_err(internal_error::<diesel::result::Error>)?;
+    .await??;
     Ok(())
 }

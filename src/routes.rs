@@ -1,8 +1,8 @@
 use maud::{html, Markup};
 
+mod errors;
 pub mod statistics_collector;
 pub mod supplier;
-pub mod util;
 
 pub async fn main_page() -> Markup {
     html! {

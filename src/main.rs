@@ -27,6 +27,8 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::routes::main_page;
+use crate::routes::statistics_collector::config::__path_get_collector_config;
+use crate::routes::statistics_collector::config::get_collector_config;
 use crate::routes::statistics_collector::create::__path_create_statistics_collector;
 use crate::routes::statistics_collector::create::create_statistics_collector;
 use crate::routes::statistics_collector::delete::__path_delete_statistics_collector;
@@ -61,6 +63,7 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
         list_statistics_collectors,
         delete_statistics_collector,
         show_statistics_collector,
+        get_collector_config,
         get_supplier_stats,
         show_input_page,
         submit_input,
@@ -122,9 +125,10 @@ async fn main() {
     let collector = Router::new()
         .route("/statistics_collector", post(create_statistics_collector))
         .route("/statistics_collector", get(list_statistics_collectors))
-        .route("/statistics_collector", delete(delete_statistics_collector))
         .route("/statistics_collector/:id", get(show_statistics_collector))
         .route("/statistics_collector/:id/stats", get(get_collector_stats))
+        .route("/statistics_collector/:id", delete(delete_statistics_collector))
+        .route("/statistics_collector/:id/config", get(get_collector_config))
         .route("/supplier/:id/stats", get(get_supplier_stats))
         .route("/supplier/:id", get(show_input_page))
         .route("/supplier/:id", post(submit_input))

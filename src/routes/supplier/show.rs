@@ -1,5 +1,5 @@
 use axum::extract::Path;
-use axum::{extract::State, http::StatusCode};
+use axum::{extract::State};
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
@@ -7,7 +7,8 @@ use uuid::Uuid;
 
 use crate::db::SupplierId;
 use crate::routes::supplier::submit::FormKey;
-use crate::routes::util::internal_error;
+
+use crate::routes::errors::AppError;
 use crate::{db, render_html, schema};
 
 struct InputPageData {
@@ -20,7 +21,7 @@ struct InputPageData {
     values: BTreeMap<FormKey, i32>,
 }
 
-/// Shows the supplier page for a supplier
+/// Shows the supplier page
 #[utoipa::path(
     get,
     path = "/supplier/{uuid}",
@@ -35,8 +36,8 @@ struct InputPageData {
 pub async fn show_input_page(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(supplier_id): Path<SupplierId>,
-) -> Result<Markup, (StatusCode, String)> {
-    let conn = pool.get().await.map_err(internal_error)?;
+) -> Result<Markup, AppError> {
+    let conn = pool.get().await?;
     let input_page_data = conn
         .interact(move |conn| {
             let (placement_type, supplier) = schema::suppliers::table
@@ -44,7 +45,7 @@ pub async fn show_input_page(
                 .inner_join(schema::placement_types::table)
                 .select((db::PlacementType::as_select(), db::Supplier::as_select()))
                 .first(conn)
-                .map_err(internal_error)?;
+                .map_err(|_| AppError::not_found("supplier", supplier_id))?;
 
             let (collector_id, collector_name): (Uuid, String) = schema::placement_types::table
                 .filter(schema::placement_types::id.eq(placement_type.id))
@@ -53,32 +54,27 @@ pub async fn show_input_page(
                     schema::statistics_collectors::id,
                     schema::statistics_collectors::name,
                 ))
-                .first(conn)
-                .map_err(internal_error)?;
+                .first(conn)?;
 
             let periods = schema::periods::table
                 .filter(schema::periods::statistics_collector_id.eq(collector_id))
                 .select(db::Period::as_select())
-                .load(conn)
-                .map_err(internal_error)?;
+                .load(conn)?;
 
             let copies = schema::copies::table
                 .filter(schema::copies::placement_type_id.eq(placement_type.id))
                 .select(db::Copy::as_select())
-                .load(conn)
-                .map_err(internal_error)?;
+                .load(conn)?;
 
             let statistic_types = schema::statistic_types::table
                 .filter(schema::statistic_types::placement_type_id.eq(placement_type.id))
                 .select(db::StatisticType::as_select())
-                .load(conn)
-                .map_err(internal_error)?;
+                .load(conn)?;
 
             let values = schema::statistics::table
                 .filter(schema::statistics::supplier_id.eq(supplier.id))
                 .select(db::Statistic::as_select())
-                .load(conn)
-                .map_err(internal_error)?
+                .load(conn)?
                 .into_iter()
                 .map(|statistic| {
                     (
@@ -92,7 +88,7 @@ pub async fn show_input_page(
                 })
                 .collect();
 
-            Ok(InputPageData {
+            Ok::<_, AppError>(InputPageData {
                 collector_name,
                 supplier,
                 placement_type,
@@ -102,8 +98,7 @@ pub async fn show_input_page(
                 values,
             })
         })
-        .await
-        .map_err(internal_error)??;
+        .await??;
 
     let title = format!(
         "{} - {} for {}",

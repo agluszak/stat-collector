@@ -5,23 +5,21 @@ use time::Date;
 use utoipa::ToSchema;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct StatisticsCollector {
-    #[serde(rename = "Name")]
     pub name: String,
-    #[serde(rename = "Periods")]
+    pub client: String,
     pub periods: Vec<Period>,
-    #[serde(rename = "placementTypes")]
     pub placement_types: Vec<PlacementType>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Period {
     pub name: String,
-    #[serde(rename = "startDate")]
     #[serde(with = "date_serde")]
     #[schema(example = "2021.01.01")]
     pub start_date: Date,
-    #[serde(rename = "endDate")]
     #[serde(with = "date_serde")]
     #[schema(example = "2021.12.25")]
     pub end_date: Date,

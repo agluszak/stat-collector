@@ -48,6 +48,7 @@ diesel::table! {
     statistics_collectors (id) {
         id -> Uuid,
         name -> Text,
+        client -> Text,
     }
 }
 

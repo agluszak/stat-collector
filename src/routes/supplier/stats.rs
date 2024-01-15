@@ -1,13 +1,14 @@
 use crate::db::SupplierId;
-use crate::routes::util::internal_error;
+
 use crate::{db, json, schema};
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+
 use axum::Json;
 use diesel::prelude::*;
 
+use crate::routes::errors::AppError;
 use itertools::Itertools;
-use std::collections::BTreeMap;
+
 
 pub fn stats_for_supplier(
     conn: &mut PgConnection,
@@ -101,17 +102,12 @@ pub fn stats_for_supplier(
 pub async fn get_supplier_stats(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(supplier_id): Path<SupplierId>,
-) -> Result<Json<json::CollectedStats>, (StatusCode, String)> {
-    let conn = pool.get().await.map_err(internal_error)?;
+) -> Result<Json<json::CollectedStats>, AppError> {
+    let conn = pool.get().await?;
     let stats = conn
-        .interact(move |conn| stats_for_supplier(conn, supplier_id).map_err(internal_error))
-        .await
-        .map_err(internal_error)?
-        .ok();
+        .interact(move |conn| stats_for_supplier(conn, supplier_id))
+        .await?
+        .map_err(|_| AppError::not_found("supplier", supplier_id))?;
 
-    if let Some(stats) = stats {
-        Ok(Json(stats))
-    } else {
-        Err((StatusCode::NOT_FOUND, "No such id".to_string()))
-    }
+    Ok(Json(stats))
 }

@@ -1,8 +1,9 @@
 use crate::json;
+use derive_more::Display;
 use diesel::prelude::*;
 use diesel_derive_newtype::DieselNewType;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+
 use time::Date;
 use uuid::Uuid;
 
@@ -10,7 +11,18 @@ use crate::schema::*;
 
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct StatCollectorId(Uuid);
 
@@ -26,22 +38,28 @@ impl StatCollectorId {
     }
 }
 
-impl Display for StatCollectorId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 #[derive(Debug, PartialEq, Serialize, Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = statistics_collectors)]
 pub struct StatisticsCollector {
     pub id: StatCollectorId,
     pub name: String,
+    pub client: String,
 }
 
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct PeriodId(Uuid);
 
@@ -58,12 +76,6 @@ impl PeriodId {
 
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid)
-    }
-}
-
-impl Display for PeriodId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
     }
 }
 
@@ -90,7 +102,18 @@ impl Period {
 
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct PlacementTypeId(Uuid);
 
@@ -103,12 +126,6 @@ impl Default for PlacementTypeId {
 impl PlacementTypeId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
-    }
-}
-
-impl Display for PlacementTypeId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
     }
 }
 
@@ -134,7 +151,18 @@ pub struct PlacementType {
 
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct SupplierId(Uuid);
 
@@ -150,12 +178,6 @@ impl SupplierId {
     }
 }
 
-impl Display for SupplierId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, Associations, Insertable)]
 #[diesel(table_name = suppliers)]
 #[diesel(belongs_to(PlacementType))]
@@ -166,9 +188,29 @@ pub struct Supplier {
     pub placement_type_id: PlacementTypeId,
 }
 
+impl Supplier {
+    pub fn as_json(&self) -> json::Supplier {
+        json::Supplier {
+            name: self.name.clone(),
+            mail: self.mail.clone(),
+        }
+    }
+}
+
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct StatisticTypeId(Uuid);
 
@@ -188,12 +230,6 @@ impl StatisticTypeId {
     }
 }
 
-impl Display for StatisticTypeId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, Associations, Insertable)]
 #[diesel(table_name = statistic_types)]
 #[diesel(belongs_to(PlacementType))]
@@ -205,7 +241,18 @@ pub struct StatisticType {
 
 #[repr(transparent)]
 #[derive(
-    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, DieselNewType, Serialize, Deserialize, Clone, Copy,
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    DieselNewType,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Display,
 )]
 pub struct CopyId(Uuid);
 
@@ -222,12 +269,6 @@ impl CopyId {
 
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid)
-    }
-}
-
-impl Display for CopyId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
     }
 }
 

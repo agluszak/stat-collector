@@ -1,6 +1,7 @@
 CREATE TABLE "statistics_collectors" (
     "id" UUID PRIMARY KEY,
-    "name" TEXT NOT NULL
+    "name" TEXT NOT NULL,
+    "client" TEXT NOT NULL
 );
 
 CREATE TABLE "periods" (

@@ -1,13 +1,13 @@
 use crate::db::{CopyId, PeriodId, StatisticTypeId, SupplierId};
-use crate::routes::util::internal_error;
+
+use crate::routes::errors::AppError;
 use crate::{db, schema};
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+
 use axum::response::Redirect;
 use axum::Form;
 use diesel::upsert::excluded;
 use diesel::ExpressionMethods;
-use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
@@ -102,8 +102,8 @@ pub async fn submit_input(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(supplier_id): Path<SupplierId>,
     Form(form): Form<BTreeMap<FormKey, FormValue>>,
-) -> Result<Redirect, (StatusCode, String)> {
-    let conn = pool.get().await.map_err(internal_error)?;
+) -> Result<Redirect, AppError> {
+    let conn = pool.get().await?;
     conn.interact(move |conn| {
         let data: Vec<db::Statistic> = form
             .iter()
@@ -129,13 +129,11 @@ pub async fn submit_input(
             ))
             .do_update()
             .set(schema::statistics::value.eq(excluded(schema::statistics::value)))
-            .execute(conn)
-            .map_err(internal_error)?;
+            .execute(conn)?;
 
-        Ok(())
+        Ok::<_, diesel::result::Error>(())
     })
-    .await
-    .map_err(internal_error)??;
+    .await??;
 
     Ok(Redirect::to(&format!("/supplier/{}", supplier_id)))
 }

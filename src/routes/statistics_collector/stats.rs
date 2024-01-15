@@ -1,33 +1,33 @@
 use std::collections::BTreeMap;
 
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+
 use axum::Json;
 use diesel::prelude::*;
-use itertools::Itertools;
 
 use crate::db::{StatCollectorId, SupplierId};
 use crate::routes::supplier::stats::stats_for_supplier;
-use crate::routes::util::internal_error;
+
+use crate::routes::errors::AppError;
 use crate::{db, json, schema};
 
 /// Gets statistics for a collector
 #[utoipa::path(
-get,
-path = "/statistics_collector/{collector_id}/stats",
-params(
-("supplier_id" = Uuid, Path, description = "Collector id")
-),
-responses(
-(status = 200, description = "Ok", body = BTreeMap<Uuid, CollectedStats>, content_type = "application/json"),
-(status = 404, description = "No such id", content_type = "text/html")
-)
+    get,
+    path = "/statistics_collector/{collector_id}/stats",
+    params(
+        ("supplier_id" = Uuid, Path, description = "Collector id")
+    ),
+    responses(
+        (status = 200, description = "Ok", body = BTreeMap<Uuid, CollectedStats>, content_type = "application/json"),
+        (status = 404, description = "No such id", content_type = "text/html")
+    )
 )]
 pub async fn get_collector_stats(
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path(collector_id): Path<StatCollectorId>,
-) -> Result<Json<BTreeMap<SupplierId, json::CollectedStats>>, (StatusCode, String)> {
-    let conn = pool.get().await.map_err(internal_error)?;
+) -> Result<Json<BTreeMap<SupplierId, json::CollectedStats>>, AppError> {
+    let conn = pool.get().await?;
     let map = conn
         .interact(move |conn| {
             let suppliers = schema::suppliers::table
@@ -51,9 +51,7 @@ pub async fn get_collector_stats(
 
             Ok::<_, diesel::result::Error>(stats)
         })
-        .await
-        .map_err(internal_error)?
-        .map_err(internal_error)?;
+        .await??;
 
     Ok(Json(map))
 }
