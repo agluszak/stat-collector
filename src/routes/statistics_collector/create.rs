@@ -3,7 +3,7 @@ use diesel::prelude::*;
 
 use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use crate::{db, json, schema};
 
 /// Creates a new statistics collector
@@ -106,7 +106,7 @@ pub async fn create_statistics_collector(
                             db::Supplier {
                                 id: SupplierId::new(),
                                 name: supplier.name.clone(),
-                                mail: supplier.mail.clone(),
+                                mail: supplier.mail.to_string(),
                                 placement_type_id,
                             }
                         })

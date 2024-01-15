@@ -1,6 +1,5 @@
 use maud::{html, Markup};
 
-mod errors;
 pub mod statistics_collector;
 pub mod supplier;
 

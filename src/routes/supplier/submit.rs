@@ -1,6 +1,6 @@
 use crate::db::{CopyId, PeriodId, StatisticTypeId, SupplierId};
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use crate::{db, schema};
 use axum::extract::{Path, State};
 

@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use crate::db::{StatCollectorId, SupplierId};
 use crate::routes::supplier::stats::stats_for_supplier;
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use crate::{db, json, schema};
 
 /// Gets statistics for a collector

@@ -1,18 +1,20 @@
 use axum::extract::Path;
-use axum::{extract::State};
+use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use crate::db::SupplierId;
+use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
 
-use crate::routes::errors::AppError;
-use crate::{db, render_html, schema};
+use crate::errors::AppError;
+use crate::{db, schema};
+use crate::logic::render_html;
 
 struct InputPageData {
     collector_name: String,
+    client: String,
     supplier: db::Supplier,
     placement_type: db::PlacementType,
     periods: Vec<db::Period>,
@@ -47,14 +49,15 @@ pub async fn show_input_page(
                 .first(conn)
                 .map_err(|_| AppError::not_found("supplier", supplier_id))?;
 
-            let (collector_id, collector_name): (Uuid, String) = schema::placement_types::table
+            let collector = schema::placement_types::table
                 .filter(schema::placement_types::id.eq(placement_type.id))
                 .inner_join(schema::statistics_collectors::table)
-                .select((
-                    schema::statistics_collectors::id,
-                    schema::statistics_collectors::name,
-                ))
-                .first(conn)?;
+                .select(schema::statistics_collectors::all_columns)
+                .first::<StatisticsCollector>(conn)?;
+
+            let collector_id = collector.id;
+            let collector_name = collector.name;
+            let client = collector.client;
 
             let periods = schema::periods::table
                 .filter(schema::periods::statistics_collector_id.eq(collector_id))
@@ -89,6 +92,7 @@ pub async fn show_input_page(
                 .collect();
 
             Ok::<_, AppError>(InputPageData {
+                client,
                 collector_name,
                 supplier,
                 placement_type,
@@ -111,6 +115,7 @@ pub async fn show_input_page(
         &title,
         html! {
             h1 { (input_page_data.placement_type.name) " - " (input_page_data.supplier.name) " for " (input_page_data.collector_name)  }
+            h2 { "Client:" (input_page_data.client) }
 
             // Table should look like this:
             // | (empty) | period 1 | period 1 | period 2 | period 2 |
@@ -145,7 +150,7 @@ pub async fn show_input_page(
                                         copy_id: copy.id,
                                     };
                                     @let name = format!("{}", form_key);
-                                    @let value = input_page_data.values.get(&form_key).copied().unwrap_or(-1);
+                                    @let value = input_page_data.values.get(&form_key).copied().unwrap_or(0);
                                     td {
                                         input type="number" name=(name) id=(name) value=(value);
                                     }

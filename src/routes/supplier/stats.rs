@@ -6,9 +6,8 @@ use axum::extract::{Path, State};
 use axum::Json;
 use diesel::prelude::*;
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use itertools::Itertools;
-
 
 pub fn stats_for_supplier(
     conn: &mut PgConnection,

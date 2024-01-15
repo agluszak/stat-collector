@@ -1,5 +1,5 @@
 use crate::db::StatCollectorId;
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use axum::extract::{Path, State};
 
 use diesel::prelude::*;

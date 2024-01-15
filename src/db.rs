@@ -38,7 +38,7 @@ impl StatCollectorId {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Queryable, Selectable, Identifiable, Insertable)]
+#[derive(Debug, PartialEq, Serialize, Queryable, Selectable, Identifiable, Insertable, Clone)]
 #[diesel(table_name = statistics_collectors)]
 pub struct StatisticsCollector {
     pub id: StatCollectorId,
@@ -192,7 +192,7 @@ impl Supplier {
     pub fn as_json(&self) -> json::Supplier {
         json::Supplier {
             name: self.name.clone(),
-            mail: self.mail.clone(),
+            mail: self.mail.parse().unwrap(),
         }
     }
 }

@@ -14,6 +14,10 @@ pub enum AppError {
     PoolError(#[from] deadpool_diesel::PoolError),
     #[error("Connection interact error: {0}")]
     InteractError(#[from] deadpool_diesel::InteractError),
+    #[error("Email error: {0}")]
+    EmailError(#[from] lettre::error::Error),
+    #[error("Email send error: {0}")]
+    EmailSendError(#[from] lettre::transport::smtp::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -31,6 +35,10 @@ impl AppError {
             resource: resource.to_string(),
             id: id.to_string(),
         }
+    }
+
+    pub fn other(error: impl Into<anyhow::Error>) -> Self {
+        Self::Other(error.into())
     }
 }
 

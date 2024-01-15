@@ -1,5 +1,5 @@
 use axum::extract::Path;
-use axum::{extract::State};
+use axum::extract::State;
 use diesel::prelude::*;
 
 use maud::{html, Markup};
@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use crate::db::StatCollectorId;
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use crate::{db, schema};
 
 struct ShowCollectorData {

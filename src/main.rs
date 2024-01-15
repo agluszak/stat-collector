@@ -1,17 +1,8 @@
-//! Run with
-//!
-//! ```not_rust
-//! cargo run -p example-diesel-postgres
-//! ```
-//!
-//! Checkout the [diesel webpage](https://diesel.rs) for
-//! longer guides about diesel
-//!
-//! Checkout the [crates.io source code](https://github.com/rust-lang/crates.io/)
-//! for a real world application using axum and diesel
-
+use std::env;
 use std::net::{Ipv4Addr, SocketAddr};
 
+use crate::logic::email::Mailer;
+use axum::extract::FromRef;
 use axum::routing::delete;
 use axum::{
     routing::{get, post},
@@ -19,6 +10,9 @@ use axum::{
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
+use lettre::Address;
+use lettre::message::Mailbox;
+use lettre::transport::smtp::authentication::Credentials;
 use tokio::net::TcpListener;
 use tower_http::normalize_path::NormalizePathLayer;
 use tracing::warn;
@@ -33,6 +27,8 @@ use crate::routes::statistics_collector::create::__path_create_statistics_collec
 use crate::routes::statistics_collector::create::create_statistics_collector;
 use crate::routes::statistics_collector::delete::__path_delete_statistics_collector;
 use crate::routes::statistics_collector::delete::delete_statistics_collector;
+use crate::routes::statistics_collector::email::__path_send_reminder_emails;
+use crate::routes::statistics_collector::email::send_reminder_emails;
 use crate::routes::statistics_collector::list::__path_list_statistics_collectors;
 use crate::routes::statistics_collector::list::list_statistics_collectors;
 use crate::routes::statistics_collector::show::__path_show_statistics_collector;
@@ -47,11 +43,11 @@ use crate::routes::supplier::submit::__path_submit_input;
 use crate::routes::supplier::submit::submit_input;
 
 mod db;
+mod errors;
 mod json;
-mod render_html;
+mod logic;
 mod routes;
 mod schema;
-
 // this embeds the migrations into the application binary
 // the migration path is relative to the `CARGO_MANIFEST_DIR`
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
@@ -68,6 +64,7 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
         show_input_page,
         submit_input,
         get_collector_stats,
+        send_reminder_emails,
     ),
     components(
         schemas(
@@ -85,6 +82,24 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
     )
 )]
 struct ApiDoc;
+
+#[derive(Clone)]
+struct AppState {
+    pool: deadpool_diesel::postgres::Pool,
+    mailer: Mailer,
+}
+
+impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
+impl FromRef<AppState> for Mailer {
+    fn from_ref(state: &AppState) -> Self {
+        state.mailer.clone()
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -117,6 +132,21 @@ async fn main() {
             .unwrap();
     }
 
+    let smtp_username = env::var("SMTP_USERNAME").expect("SMTP_USERNAME must be set");
+    let smtp_password = env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
+    let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
+
+    let mailer = Mailer::new(
+        Mailbox::new(Some("StatCollector Reminder".to_string()), smtp_username.parse().unwrap()),
+        &smtp_host,
+        587,
+        std::time::Duration::from_secs(15),
+        Credentials::new(
+            smtp_username,
+            smtp_password,
+        ),
+    );
+
     let docs: Router = SwaggerUi::new("/docs")
         .url("/api.json", ApiDoc::openapi())
         .into();
@@ -127,12 +157,22 @@ async fn main() {
         .route("/statistics_collector", get(list_statistics_collectors))
         .route("/statistics_collector/:id", get(show_statistics_collector))
         .route("/statistics_collector/:id/stats", get(get_collector_stats))
-        .route("/statistics_collector/:id", delete(delete_statistics_collector))
-        .route("/statistics_collector/:id/config", get(get_collector_config))
+        .route(
+            "/statistics_collector/:id",
+            delete(delete_statistics_collector),
+        )
+        .route(
+            "/statistics_collector/:id/config",
+            get(get_collector_config),
+        )
+        .route(
+            "/statistics_collector/:id/send_emails",
+            post(send_reminder_emails),
+        )
         .route("/supplier/:id/stats", get(get_supplier_stats))
         .route("/supplier/:id", get(show_input_page))
         .route("/supplier/:id", post(submit_input))
-        .with_state(pool);
+        .with_state(AppState { pool, mailer });
 
     let collector = collector.layer(NormalizePathLayer::trim_trailing_slash());
 

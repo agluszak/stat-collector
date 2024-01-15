@@ -1,7 +1,7 @@
 use axum::{extract::State, response::Json};
 use diesel::prelude::*;
 
-use crate::routes::errors::AppError;
+use crate::errors::AppError;
 use crate::{db, schema};
 
 /// Lists all statistics collectors

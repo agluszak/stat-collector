@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use lettre::Address;
 use time::Date;
 use utoipa::ToSchema;
 
@@ -58,10 +59,10 @@ pub struct PlacementType {
     pub copies: Vec<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct Supplier {
     pub name: String,
-    pub mail: String,
+    pub mail: Address,
 }
 
 /// Stats from a supplier

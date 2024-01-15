@@ -23,9 +23,8 @@ services:
      - POSTGRES_USER=postgres
      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
     ports:
-      - "5432:5432"
-#    expose:
-#     - 5432
+    expose:
+     - 5432
     healthcheck:
      test: [ "CMD", "pg_isready" ]
      interval: 10s
