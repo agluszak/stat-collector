@@ -17,14 +17,13 @@ pub struct Mailer {
 impl Mailer {
     pub fn new(
         from_email: Mailbox,
-        smpt_starttls_relay: &str,
+        smtp_server: &str,
         port: u16,
         timeout: Duration,
         creds: Credentials,
         base_url: &str,
     ) -> Self {
-        let transport = SmtpTransport::starttls_relay(smpt_starttls_relay)
-            .unwrap()
+        let transport = SmtpTransport::builder_dangerous(smtp_server)
             .port(port)
             .timeout(Some(timeout))
             .credentials(creds)
