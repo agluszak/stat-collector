@@ -14,7 +14,7 @@ ARG APP_NAME
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y build-essential libpq-dev
+    apt-get install -y build-essential libpq-dev libssl-dev pkg-config libudev-dev
 
 # Build the application.
 # Leverage a cache mount to /usr/local/cargo/registry/
@@ -46,7 +46,7 @@ RUN --mount=type=bind,source=src,target=src \
 FROM debian:bullseye-slim AS final
 
 RUN apt-get update && \
-    apt-get install -y build-essential libpq-dev
+    apt-get install -y build-essential libpq-dev libssl-dev pkg-config libudev-dev
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/

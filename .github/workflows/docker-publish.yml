@@ -43,11 +43,6 @@ jobs:
         with:
           cosign-release: 'v2.1.1'
 
-      - name: Install libs
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config libudev-dev
-
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
       # https://github.com/docker/setup-buildx-action
