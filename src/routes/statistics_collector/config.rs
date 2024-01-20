@@ -126,6 +126,8 @@ pub async fn get_collector_config(
                 id: collector.id,
                 name: collector.name,
                 client: collector.client,
+                periodicity: collector.periodicity,
+                weekday: collector.weekday,
                 periods,
                 placement_types: json_placement_types,
             })

@@ -49,6 +49,8 @@ diesel::table! {
         id -> Uuid,
         name -> Text,
         client -> Text,
+        periodicity -> Text,
+        weekday -> Text,
     }
 }
 

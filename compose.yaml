@@ -4,7 +4,7 @@ services:
   server:
     image: "ghcr.io/agluszak/stat-collector:main"
     ports:
-      - "5433:80"
+      - "80:5433"
     depends_on:
        db:
          condition: service_healthy
@@ -17,18 +17,20 @@ services:
     volumes:
      - db-data:/var/lib/postgresql/data
     environment:
-     - POSTGRES_DB=stat-collector
-     - POSTGRES_USER=postgres
+     - POSTGRES_DB
+     - POSTGRES_USER
      - POSTGRES_PASSWORD
     env_file:
       - .env
     expose:
-     - 5432
+      - 5432
+    ports:
+      - "5432:5432"
     healthcheck:
-     test: [ "CMD", "pg_isready" ]
-     interval: 10s
-     timeout: 5s
-     retries: 5
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   db-data:
 

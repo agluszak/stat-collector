@@ -42,6 +42,8 @@ pub struct StatisticsCollector {
     pub id: StatCollectorId,
     pub name: String,
     pub client: String,
+    pub weekday: String,
+    pub periodicity: String,
 }
 
 #[repr(transparent)]

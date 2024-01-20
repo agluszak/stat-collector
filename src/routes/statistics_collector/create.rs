@@ -27,6 +27,8 @@ pub async fn create_statistics_collector(
 
                 let db_statistics_collector = db::StatisticsCollector {
                     id: collector_id,
+                    periodicity: statistics_collector.periodicity.clone(),
+                    weekday: statistics_collector.weekday.clone(),
                     name: statistics_collector.name.clone(),
                     client: statistics_collector.client.clone(),
                 };
@@ -177,24 +179,30 @@ pub async fn create_statistics_collector(
                     .values(&db_copies)
                     .execute(conn)?;
 
-                // for each copy, for each statistic type, for each supplier, for each period, insert a statistic with value 0
-                let db_statistics = db_copies
+                // for each period, for supplier, for each of supplier's statistic types, for each of supplier's copies
+                let db_statistics = db_periods
                     .iter()
-                    .flat_map(|copy| {
-                        db_statistic_types
+                    .flat_map(|period| {
+                        db_suppliers
                             .iter()
-                            .flat_map(|statistic_type| {
-                                db_suppliers
+                            .flat_map(|supplier| {
+                                db_statistic_types
                                     .iter()
-                                    .flat_map(|supplier| {
-                                        db_periods
+                                    .filter(|statistic_type| {
+                                        statistic_type.placement_type_id == supplier.placement_type_id
+                                    })
+                                    .flat_map(|statistic_type| {
+                                        db_copies
                                             .iter()
-                                            .map(|period| db::Statistic {
+                                            .filter(|copy| {
+                                                copy.placement_type_id == supplier.placement_type_id
+                                            })
+                                            .map(|copy| db::Statistic {
                                                 value: 0,
-                                                copy_id: copy.id,
-                                                statistic_type_id: statistic_type.id,
-                                                supplier_id: supplier.id,
                                                 period_id: period.id,
+                                                supplier_id: supplier.id,
+                                                statistic_type_id: statistic_type.id,
+                                                copy_id: copy.id,
                                             })
                                             .collect::<Vec<db::Statistic>>()
                                     })
@@ -203,6 +211,7 @@ pub async fn create_statistics_collector(
                             .collect::<Vec<db::Statistic>>()
                     })
                     .collect::<Vec<db::Statistic>>();
+
 
                 diesel::insert_into(schema::statistics::table)
                     .values(&db_statistics)
