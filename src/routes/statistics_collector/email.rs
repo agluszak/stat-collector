@@ -1,12 +1,12 @@
 use axum::extract::Path;
-use axum::{extract::State};
+use axum::extract::State;
 use diesel::prelude::*;
 
-use crate::db::{StatCollectorId};
+use crate::db::StatCollectorId;
 
 use crate::errors::AppError;
-use crate::{db, schema};
 use crate::logic::email::Mailer;
+use crate::{db, schema};
 
 /// Sends reminder emails to all suppliers of a statistics collector
 #[utoipa::path(
@@ -25,27 +25,30 @@ pub async fn send_reminder_emails(
     Path(id): Path<StatCollectorId>,
 ) -> Result<(), AppError> {
     let conn = pool.get().await?;
-    conn
-        .interact(move |conn| {
-            conn.transaction(move |conn| {
-                let stat_collector = schema::statistics_collectors::table
-                    .find(id)
-                    .first::<db::StatisticsCollector>(conn)
-                    .map_err(|_| AppError::not_found("statistics collector", id))?;
+    conn.interact(move |conn| {
+        conn.transaction(move |conn| {
+            let stat_collector = schema::statistics_collectors::table
+                .find(id)
+                .first::<db::StatisticsCollector>(conn)
+                .map_err(|_| AppError::not_found("statistics collector", id))?;
 
-                let suppliers: Vec<db::Supplier> = schema::placement_types::table
-                    .filter(schema::placement_types::statistics_collector_id.eq(id))
-                    .inner_join(schema::suppliers::table)
-                    .select(db::Supplier::as_select())
-                    .load(conn)?;
+            let suppliers: Vec<db::Supplier> = schema::placement_types::table
+                .filter(schema::placement_types::statistics_collector_id.eq(id))
+                .inner_join(schema::suppliers::table)
+                .select(db::Supplier::as_select())
+                .load(conn)?;
 
-                for supplier in suppliers {
-                    mailer.send(stat_collector.clone(), supplier.mail.parse().unwrap(), supplier.id)?;
-                }
+            for supplier in suppliers {
+                mailer.send(
+                    stat_collector.clone(),
+                    supplier.mail.parse().unwrap(),
+                    supplier.id,
+                )?;
+            }
 
-                Ok::<(), AppError>(())
-            })
+            Ok::<(), AppError>(())
         })
-        .await??;
+    })
+    .await??;
     Ok(())
 }

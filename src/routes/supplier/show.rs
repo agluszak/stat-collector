@@ -4,13 +4,12 @@ use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
 
-
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
 
 use crate::errors::AppError;
-use crate::{db, schema};
 use crate::logic::render_html;
+use crate::{db, schema};
 
 struct InputPageData {
     collector_name: String,

@@ -1,3 +1,5 @@
+#![allow(clippy::new_without_default)]
+
 use crate::json;
 use derive_more::Display;
 use diesel::prelude::*;
@@ -5,6 +7,7 @@ use diesel_derive_newtype::DieselNewType;
 use serde::{Deserialize, Serialize};
 
 use time::Date;
+use utoipa::ToResponse;
 use uuid::Uuid;
 
 use crate::schema::*;
@@ -23,14 +26,9 @@ use crate::schema::*;
     Clone,
     Copy,
     Display,
+    ToResponse,
 )]
 pub struct StatCollectorId(Uuid);
-
-impl Default for StatCollectorId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl StatCollectorId {
     pub fn new() -> Self {
@@ -63,12 +61,6 @@ pub struct StatisticsCollector {
 )]
 pub struct PeriodId(Uuid);
 
-impl Default for PeriodId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl PeriodId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
@@ -91,8 +83,9 @@ pub struct Period {
 }
 
 impl Period {
-    pub fn as_json(&self) -> json::Period {
-        json::Period {
+    pub fn as_json(&self) -> json::sent::Period {
+        json::sent::Period {
+            id: self.id,
             name: self.name.clone(),
             start_date: self.start,
             end_date: self.end,
@@ -116,12 +109,6 @@ impl Period {
     Display,
 )]
 pub struct PlacementTypeId(Uuid);
-
-impl Default for PlacementTypeId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl PlacementTypeId {
     pub fn new() -> Self {
@@ -166,12 +153,6 @@ pub struct PlacementType {
 )]
 pub struct SupplierId(Uuid);
 
-impl Default for SupplierId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SupplierId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
@@ -189,10 +170,12 @@ pub struct Supplier {
 }
 
 impl Supplier {
-    pub fn as_json(&self) -> json::Supplier {
-        json::Supplier {
+    pub fn as_json(&self, stats: Vec<Vec<Vec<i32>>>) -> json::sent::Supplier {
+        json::sent::Supplier {
+            id: self.id,
             name: self.name.clone(),
             mail: self.mail.parse().unwrap(),
+            stats,
         }
     }
 }
@@ -214,12 +197,6 @@ impl Supplier {
 )]
 pub struct StatisticTypeId(Uuid);
 
-impl Default for StatisticTypeId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl StatisticTypeId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
@@ -239,6 +216,12 @@ pub struct StatisticType {
     pub placement_type_id: PlacementTypeId,
 }
 
+impl StatisticType {
+    pub fn as_json(&self) -> String {
+        self.name.clone()
+    }
+}
+
 #[repr(transparent)]
 #[derive(
     Debug,
@@ -255,12 +238,6 @@ pub struct StatisticType {
     Display,
 )]
 pub struct CopyId(Uuid);
-
-impl Default for CopyId {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl CopyId {
     pub fn new() -> Self {

@@ -50,8 +50,7 @@ impl Mailer {
         );
         let body = format!(
             "Prosimy o uzupełnienie statystyk\n\n{}/supplier/{}",
-            self.base_url,
-            supplier_id
+            self.base_url, supplier_id
         );
 
         let email = Message::builder()

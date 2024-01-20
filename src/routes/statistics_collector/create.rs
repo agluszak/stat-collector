@@ -17,168 +17,200 @@ use crate::{db, json, schema};
 )]
 pub async fn create_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Json(statistics_collector): Json<json::StatisticsCollector>,
-) -> Result<(), AppError> {
+    Json(statistics_collector): Json<json::received::StatCollector>,
+) -> Result<Json<StatCollectorId>, AppError> {
     let conn = pool.get().await?;
-    conn.interact(move |conn| {
-        conn.transaction(|conn| {
-            let collector_id = StatCollectorId::new();
+    let id = conn
+        .interact(move |conn| {
+            conn.transaction(|conn| {
+                let collector_id = StatCollectorId::new();
 
-            let db_statistics_collector = db::StatisticsCollector {
-                id: collector_id,
-                name: statistics_collector.name.clone(),
-                client: statistics_collector.client.clone(),
-            };
+                let db_statistics_collector = db::StatisticsCollector {
+                    id: collector_id,
+                    name: statistics_collector.name.clone(),
+                    client: statistics_collector.client.clone(),
+                };
 
-            // Ensure that (name, client) tuple is unique
-            let existing = schema::statistics_collectors::table
-                .select(schema::statistics_collectors::id)
-                .filter(
-                    schema::statistics_collectors::name
-                        .eq(&db_statistics_collector.name)
-                        .and(
-                            schema::statistics_collectors::client
-                                .eq(&db_statistics_collector.client),
+                // Ensure that (name, client) tuple is unique
+                let existing = schema::statistics_collectors::table
+                    .select(schema::statistics_collectors::id)
+                    .filter(
+                        schema::statistics_collectors::name
+                            .eq(&db_statistics_collector.name)
+                            .and(
+                                schema::statistics_collectors::client
+                                    .eq(&db_statistics_collector.client),
+                            ),
+                    )
+                    .first::<StatCollectorId>(conn)
+                    .optional()?;
+
+                if let Some(existing) = existing {
+                    return Err(AppError::Conflict {
+                        resource: format!(
+                            "statistics collector with name {} and client {}",
+                            db_statistics_collector.name, db_statistics_collector.client
                         ),
-                )
-                .first::<StatCollectorId>(conn)
-                .optional()?;
+                        id: existing.to_string(),
+                    });
+                }
 
-            if let Some(existing) = existing {
-                return Err(AppError::Conflict {
-                    resource: format!(
-                        "statistics collector with name {} and client {}",
-                        db_statistics_collector.name, db_statistics_collector.client
-                    ),
-                    id: existing.to_string(),
-                });
-            }
+                diesel::insert_into(schema::statistics_collectors::table)
+                    .values(&db_statistics_collector)
+                    .execute(conn)?;
 
-            diesel::insert_into(schema::statistics_collectors::table)
-                .values(&db_statistics_collector)
-                .execute(conn)?;
+                let db_periods = statistics_collector
+                    .periods
+                    .iter()
+                    .map(|period| db::Period {
+                        id: PeriodId::new(),
+                        name: period.name.clone(),
+                        start: period.start_date,
+                        end: period.end_date,
+                        statistics_collector_id: collector_id,
+                    })
+                    .collect::<Vec<db::Period>>();
 
-            let db_periods = statistics_collector
-                .periods
-                .iter()
-                .map(|period| db::Period {
-                    id: PeriodId::new(),
-                    name: period.name.clone(),
-                    start: period.start_date,
-                    end: period.end_date,
-                    statistics_collector_id: collector_id,
-                })
-                .collect::<Vec<db::Period>>();
+                diesel::insert_into(schema::periods::table)
+                    .values(&db_periods)
+                    .execute(conn)?;
 
-            diesel::insert_into(schema::periods::table)
-                .values(&db_periods)
-                .execute(conn)?;
+                let db_placement_types = statistics_collector
+                    .placement_types
+                    .iter()
+                    .map(|placement_type| db::PlacementType {
+                        id: PlacementTypeId::new(),
+                        name: placement_type.name.clone(),
+                        statistics_collector_id: collector_id,
+                    })
+                    .collect::<Vec<db::PlacementType>>();
 
-            let db_placement_types = statistics_collector
-                .placement_types
-                .iter()
-                .map(|placement_type| db::PlacementType {
-                    id: PlacementTypeId::new(),
-                    name: placement_type.name.clone(),
-                    statistics_collector_id: collector_id,
-                })
-                .collect::<Vec<db::PlacementType>>();
+                let db_placement_types = diesel::insert_into(schema::placement_types::table)
+                    .values(&db_placement_types)
+                    .get_results::<db::PlacementType>(conn)?;
 
-            let db_placement_types = diesel::insert_into(schema::placement_types::table)
-                .values(&db_placement_types)
-                .get_results::<db::PlacementType>(conn)?;
+                let db_suppliers = statistics_collector
+                    .placement_types
+                    .iter()
+                    .flat_map(|placement_type| {
+                        placement_type
+                            .suppliers
+                            .iter()
+                            .map(|supplier| {
+                                let placement_type_id = db_placement_types
+                                    .iter()
+                                    .find(|db_placement_type| {
+                                        db_placement_type.name == placement_type.name
+                                    })
+                                    .unwrap()
+                                    .id;
+                                db::Supplier {
+                                    id: SupplierId::new(),
+                                    name: supplier.name.clone(),
+                                    mail: supplier.mail.to_string(),
+                                    placement_type_id,
+                                }
+                            })
+                            .collect::<Vec<db::Supplier>>()
+                    })
+                    .collect::<Vec<db::Supplier>>();
 
-            let db_suppliers = statistics_collector
-                .placement_types
-                .iter()
-                .flat_map(|placement_type| {
-                    placement_type
-                        .suppliers
-                        .iter()
-                        .map(|supplier| {
-                            let placement_type_id = db_placement_types
-                                .iter()
-                                .find(|db_placement_type| {
-                                    db_placement_type.name == placement_type.name
-                                })
-                                .unwrap()
-                                .id;
-                            db::Supplier {
-                                id: SupplierId::new(),
-                                name: supplier.name.clone(),
-                                mail: supplier.mail.to_string(),
-                                placement_type_id,
-                            }
-                        })
-                        .collect::<Vec<db::Supplier>>()
-                })
-                .collect::<Vec<db::Supplier>>();
+                let _db_suppliers = diesel::insert_into(schema::suppliers::table)
+                    .values(&db_suppliers)
+                    .get_results::<db::Supplier>(conn)?;
 
-            let _db_suppliers = diesel::insert_into(schema::suppliers::table)
-                .values(&db_suppliers)
-                .get_results::<db::Supplier>(conn)?;
+                let db_statistic_types = statistics_collector
+                    .placement_types
+                    .iter()
+                    .flat_map(|placement_type| {
+                        placement_type
+                            .statistics
+                            .iter()
+                            .map(|statistic| {
+                                let placement_type_id = db_placement_types
+                                    .iter()
+                                    .find(|db_placement_type| {
+                                        db_placement_type.name == placement_type.name
+                                    })
+                                    .unwrap()
+                                    .id;
+                                db::StatisticType {
+                                    id: StatisticTypeId::new(),
+                                    name: statistic.clone(),
+                                    placement_type_id,
+                                }
+                            })
+                            .collect::<Vec<db::StatisticType>>()
+                    })
+                    .collect::<Vec<db::StatisticType>>();
 
-            let db_statistic_types = statistics_collector
-                .placement_types
-                .iter()
-                .flat_map(|placement_type| {
-                    placement_type
-                        .statistics
-                        .iter()
-                        .map(|statistic| {
-                            let placement_type_id = db_placement_types
-                                .iter()
-                                .find(|db_placement_type| {
-                                    db_placement_type.name == placement_type.name
-                                })
-                                .unwrap()
-                                .id;
-                            db::StatisticType {
-                                id: StatisticTypeId::new(),
-                                name: statistic.clone(),
-                                placement_type_id,
-                            }
-                        })
-                        .collect::<Vec<db::StatisticType>>()
-                })
-                .collect::<Vec<db::StatisticType>>();
+                diesel::insert_into(schema::statistic_types::table)
+                    .values(&db_statistic_types)
+                    .execute(conn)?;
 
-            diesel::insert_into(schema::statistic_types::table)
-                .values(&db_statistic_types)
-                .execute(conn)?;
+                let db_copies = statistics_collector
+                    .placement_types
+                    .iter()
+                    .flat_map(|placement_type| {
+                        placement_type
+                            .copies
+                            .iter()
+                            .map(|copy| {
+                                let placement_type_id = db_placement_types
+                                    .iter()
+                                    .find(|db_placement_type| {
+                                        db_placement_type.name == placement_type.name
+                                    })
+                                    .unwrap()
+                                    .id;
+                                db::Copy {
+                                    id: CopyId::new(),
+                                    name: copy.clone(),
+                                    placement_type_id,
+                                }
+                            })
+                            .collect::<Vec<db::Copy>>()
+                    })
+                    .collect::<Vec<db::Copy>>();
 
-            let db_copies = statistics_collector
-                .placement_types
-                .iter()
-                .flat_map(|placement_type| {
-                    placement_type
-                        .copies
-                        .iter()
-                        .map(|copy| {
-                            let placement_type_id = db_placement_types
-                                .iter()
-                                .find(|db_placement_type| {
-                                    db_placement_type.name == placement_type.name
-                                })
-                                .unwrap()
-                                .id;
-                            db::Copy {
-                                id: CopyId::new(),
-                                name: copy.clone(),
-                                placement_type_id,
-                            }
-                        })
-                        .collect::<Vec<db::Copy>>()
-                })
-                .collect::<Vec<db::Copy>>();
+                diesel::insert_into(schema::copies::table)
+                    .values(&db_copies)
+                    .execute(conn)?;
 
-            diesel::insert_into(schema::copies::table)
-                .values(&db_copies)
-                .execute(conn)?;
+                // for each copy, for each statistic type, for each supplier, for each period, insert a statistic with value 0
+                let db_statistics = db_copies
+                    .iter()
+                    .flat_map(|copy| {
+                        db_statistic_types
+                            .iter()
+                            .flat_map(|statistic_type| {
+                                db_suppliers
+                                    .iter()
+                                    .flat_map(|supplier| {
+                                        db_periods
+                                            .iter()
+                                            .map(|period| db::Statistic {
+                                                value: 0,
+                                                copy_id: copy.id,
+                                                statistic_type_id: statistic_type.id,
+                                                supplier_id: supplier.id,
+                                                period_id: period.id,
+                                            })
+                                            .collect::<Vec<db::Statistic>>()
+                                    })
+                                    .collect::<Vec<db::Statistic>>()
+                            })
+                            .collect::<Vec<db::Statistic>>()
+                    })
+                    .collect::<Vec<db::Statistic>>();
 
-            Ok(())
+                diesel::insert_into(schema::statistics::table)
+                    .values(&db_statistics)
+                    .execute(conn)?;
+
+                Ok(collector_id)
+            })
         })
-    })
-    .await??;
-    Ok(())
+        .await??;
+    Ok(Json(id))
 }

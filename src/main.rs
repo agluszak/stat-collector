@@ -3,13 +3,13 @@ use std::net::{Ipv4Addr, SocketAddr};
 
 use crate::logic::email::Mailer;
 use axum::extract::FromRef;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::delete;
 use axum::{
     routing::{get, post},
     Router,
 };
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
 
@@ -35,12 +35,8 @@ use crate::routes::statistics_collector::list::__path_list_statistics_collectors
 use crate::routes::statistics_collector::list::list_statistics_collectors;
 use crate::routes::statistics_collector::show::__path_show_statistics_collector;
 use crate::routes::statistics_collector::show::show_statistics_collector;
-use crate::routes::statistics_collector::stats::__path_get_collector_stats;
-use crate::routes::statistics_collector::stats::get_collector_stats;
 use crate::routes::supplier::show::__path_show_input_page;
 use crate::routes::supplier::show::show_input_page;
-use crate::routes::supplier::stats::__path_get_supplier_stats;
-use crate::routes::supplier::stats::get_supplier_stats;
 use crate::routes::supplier::submit::__path_submit_input;
 use crate::routes::supplier::submit::submit_input;
 
@@ -50,6 +46,7 @@ mod json;
 mod logic;
 mod routes;
 mod schema;
+
 // this embeds the migrations into the application binary
 // the migration path is relative to the `CARGO_MANIFEST_DIR`
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
@@ -62,19 +59,20 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
         delete_statistics_collector,
         show_statistics_collector,
         get_collector_config,
-        get_supplier_stats,
         show_input_page,
         submit_input,
-        get_collector_stats,
         send_reminder_emails,
     ),
     components(
         schemas(
-            json::Period,
-            json::PlacementType,
-            json::StatisticsCollector,
-            json::Supplier,
-            json::CollectedStats,
+            json::sent::Period,
+            json::sent::PlacementType,
+            json::sent::StatCollector,
+            json::sent::Supplier,
+            json::received::Period,
+            json::received::PlacementType,
+            json::received::StatCollector,
+            json::received::Supplier,
             routes::supplier::submit::FormKey,
             routes::supplier::submit::FormValue,
         )
@@ -144,15 +142,15 @@ async fn main() {
     let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
 
     let mailer = Mailer::new(
-        Mailbox::new(Some("StatCollector Reminder".to_string()), smtp_username.parse().unwrap()),
+        Mailbox::new(
+            Some("StatCollector Reminder".to_string()),
+            smtp_username.parse().unwrap(),
+        ),
         &smtp_host,
         587,
         std::time::Duration::from_secs(15),
-        Credentials::new(
-            smtp_username,
-            smtp_password,
-        ),
-        &base_url
+        Credentials::new(smtp_username, smtp_password),
+        &base_url,
     );
 
     let docs: Router = SwaggerUi::new("/docs")
@@ -164,7 +162,6 @@ async fn main() {
         .route("/statistics_collector", post(create_statistics_collector))
         .route("/statistics_collector", get(list_statistics_collectors))
         .route("/statistics_collector/:id", get(show_statistics_collector))
-        .route("/statistics_collector/:id/stats", get(get_collector_stats))
         .route(
             "/statistics_collector/:id",
             delete(delete_statistics_collector),
@@ -177,7 +174,6 @@ async fn main() {
             "/statistics_collector/:id/send_emails",
             post(send_reminder_emails),
         )
-        .route("/supplier/:id/stats", get(get_supplier_stats))
         .route("/supplier/:id", get(show_input_page))
         .route("/supplier/:id", post(submit_input))
         .with_state(AppState { pool, mailer })
