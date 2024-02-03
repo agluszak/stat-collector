@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use diesel_derive_newtype::DieselNewType;
 use serde::{Deserialize, Serialize};
 
-use time::Date;
+use time::{Date, OffsetDateTime};
 use utoipa::ToResponse;
 use uuid::Uuid;
 
@@ -36,14 +36,22 @@ impl StatCollectorId {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Queryable, Selectable, Identifiable, Insertable, Clone)]
+impl From<Uuid> for StatCollectorId {
+    fn from(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+}
+
+#[derive(
+    Debug, PartialEq, Serialize, Deserialize, Queryable, Selectable, Identifiable, Insertable, Clone,
+)]
 #[diesel(table_name = statistics_collectors)]
 pub struct StatisticsCollector {
     pub id: StatCollectorId,
     pub name: String,
     pub client: String,
-    pub weekday: String,
     pub periodicity: String,
+    pub weekday: String,
 }
 
 #[repr(transparent)]
@@ -169,6 +177,7 @@ pub struct Supplier {
     pub name: String,
     pub mail: String,
     pub placement_type_id: PlacementTypeId,
+    pub submitted_date: OffsetDateTime,
 }
 
 impl Supplier {

@@ -1,4 +1,3 @@
-
 use crate::json::date_serde;
 use lettre::Address;
 use serde::Deserialize;

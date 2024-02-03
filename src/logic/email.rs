@@ -4,17 +4,28 @@ use lettre::message::header::ContentType;
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Address, Message, SmtpTransport, Transport};
+use mockall::*;
 use std::time::Duration;
 use tracing::info;
 
+#[automock]
+pub trait Mailer: Send + Sync + 'static {
+    fn send_reminder(
+        &self,
+        stat_collector: StatisticsCollector,
+        to_email: Address,
+        supplier_id: SupplierId,
+    ) -> Result<(), AppError>;
+}
+
 #[derive(Debug, Clone)]
-pub struct Mailer {
+pub struct AppMailer {
     transport: SmtpTransport,
     from_email: Mailbox,
     base_url: String,
 }
 
-impl Mailer {
+impl AppMailer {
     pub fn new(
         from_email: Mailbox,
         smtp_server: &str,
@@ -29,14 +40,16 @@ impl Mailer {
             .credentials(creds)
             .build();
 
-        Mailer {
+        Self {
             from_email,
             transport,
             base_url: base_url.to_string(),
         }
     }
+}
 
-    pub fn send(
+impl Mailer for AppMailer {
+    fn send_reminder(
         &self,
         stat_collector: StatisticsCollector,
         to_email: Address,

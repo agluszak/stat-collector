@@ -7,7 +7,7 @@ use axum::extract::{Path, State};
 use axum::response::Redirect;
 use axum::Form;
 use diesel::upsert::excluded;
-use diesel::ExpressionMethods;
+use diesel::prelude::*;
 use diesel::RunQueryDsl;
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
@@ -105,33 +105,40 @@ pub async fn submit_input(
 ) -> Result<Redirect, AppError> {
     let conn = pool.get().await?;
     conn.interact(move |conn| {
-        let data: Vec<db::Statistic> = form
-            .iter()
-            .filter_map(|(k, v)| {
-                v.0.map(|v| db::Statistic {
-                    period_id: k.period_id,
-                    supplier_id,
-                    statistic_type_id: k.statistic_type_id,
-                    copy_id: k.copy_id,
-                    value: v,
+        conn.transaction(move |conn| {
+            let data: Vec<db::Statistic> = form
+                .iter()
+                .filter_map(|(k, v)| {
+                    v.0.map(|v| db::Statistic {
+                        period_id: k.period_id,
+                        supplier_id,
+                        statistic_type_id: k.statistic_type_id,
+                        copy_id: k.copy_id,
+                        value: v,
+                    })
                 })
-            })
-            .collect();
+                .collect();
 
-        // Upsert statistics
-        diesel::insert_into(schema::statistics::table)
-            .values(&data)
-            .on_conflict((
-                schema::statistics::period_id,
-                schema::statistics::supplier_id,
-                schema::statistics::statistic_type_id,
-                schema::statistics::copy_id,
-            ))
-            .do_update()
-            .set(schema::statistics::value.eq(excluded(schema::statistics::value)))
-            .execute(conn)?;
+            // Upsert statistics
+            diesel::insert_into(schema::statistics::table)
+                .values(&data)
+                .on_conflict((
+                    schema::statistics::period_id,
+                    schema::statistics::supplier_id,
+                    schema::statistics::statistic_type_id,
+                    schema::statistics::copy_id,
+                ))
+                .do_update()
+                .set(schema::statistics::value.eq(excluded(schema::statistics::value)))
+                .execute(conn)?;
 
-        Ok::<_, diesel::result::Error>(())
+            // Update "submitted_date" for the supplier
+            diesel::update(schema::suppliers::table.filter(schema::suppliers::id.eq(supplier_id)))
+                .set(schema::suppliers::submitted_date.eq(diesel::dsl::now))
+                .execute(conn)?;
+
+            Ok::<_, diesel::result::Error>(())
+        })
     })
     .await??;
 

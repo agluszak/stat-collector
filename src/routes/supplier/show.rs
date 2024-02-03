@@ -3,6 +3,7 @@ use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
+use time::OffsetDateTime;
 
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
@@ -157,6 +158,9 @@ pub async fn show_input_page(
                             }
                         }
                     }
+                }
+                p {
+                    "Last submitted: " (input_page_data.supplier.submitted_date.format(&time::format_description::well_known::Iso8601::DATE_TIME_OFFSET).unwrap())
                 }
                 input type="submit" value="Submit";
             }

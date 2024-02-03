@@ -1,5 +1,6 @@
 use axum::{extract::State, response::Json};
 use diesel::prelude::*;
+use time::OffsetDateTime;
 
 use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
 
@@ -111,6 +112,7 @@ pub async fn create_statistics_collector(
                                     name: supplier.name.clone(),
                                     mail: supplier.mail.to_string(),
                                     placement_type_id,
+                                    submitted_date: OffsetDateTime::now_utc(),
                                 }
                             })
                             .collect::<Vec<db::Supplier>>()
@@ -189,7 +191,8 @@ pub async fn create_statistics_collector(
                                 db_statistic_types
                                     .iter()
                                     .filter(|statistic_type| {
-                                        statistic_type.placement_type_id == supplier.placement_type_id
+                                        statistic_type.placement_type_id
+                                            == supplier.placement_type_id
                                     })
                                     .flat_map(|statistic_type| {
                                         db_copies
@@ -211,7 +214,6 @@ pub async fn create_statistics_collector(
                             .collect::<Vec<db::Statistic>>()
                     })
                     .collect::<Vec<db::Statistic>>();
-
 
                 diesel::insert_into(schema::statistics::table)
                     .values(&db_statistics)

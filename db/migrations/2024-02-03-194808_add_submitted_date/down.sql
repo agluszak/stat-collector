@@ -1,0 +1,1 @@
+ALTER TABLE "suppliers" DROP COLUMN "submitted_date";

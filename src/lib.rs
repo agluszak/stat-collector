@@ -1,7 +1,8 @@
-use std::env;
-use std::net::{Ipv4Addr, SocketAddr};
 
-use crate::logic::email::Mailer;
+
+use std::sync::Arc;
+
+use crate::logic::email::{Mailer};
 use axum::extract::FromRef;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -11,14 +12,14 @@ use axum::{
     Router,
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use dotenvy::dotenv;
 
-use lettre::message::Mailbox;
-use lettre::transport::smtp::authentication::Credentials;
-use tokio::net::TcpListener;
+
+
+
+
 use tower_http::normalize_path::NormalizePathLayer;
-use tracing::warn;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -40,10 +41,10 @@ use crate::routes::supplier::show::show_input_page;
 use crate::routes::supplier::submit::__path_submit_input;
 use crate::routes::supplier::submit::submit_input;
 
-mod db;
+pub mod db;
 mod errors;
-mod json;
-mod logic;
+pub mod json;
+pub mod logic;
 mod routes;
 mod schema;
 
@@ -86,7 +87,7 @@ struct ApiDoc;
 #[derive(Clone)]
 struct AppState {
     pool: deadpool_diesel::postgres::Pool,
-    mailer: Mailer,
+    mailer: Arc<dyn Mailer>,
 }
 
 impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
@@ -95,7 +96,7 @@ impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
     }
 }
 
-impl FromRef<AppState> for Mailer {
+impl FromRef<AppState> for Arc<dyn Mailer> {
     fn from_ref(state: &AppState) -> Self {
         state.mailer.clone()
     }
@@ -105,22 +106,7 @@ async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Wrong URL")
 }
 
-#[tokio::main]
-async fn main() {
-    if let Err(e) = dotenv() {
-        warn!("Failed to load .env file: {}", e);
-    }
-
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "stat-collector=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
+pub async fn build_app(db_url: String, mailer: Arc<dyn Mailer>) -> Router {
     // set up connection pool
     let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
     let pool = deadpool_diesel::postgres::Pool::builder(manager)
@@ -135,23 +121,6 @@ async fn main() {
             .unwrap()
             .unwrap();
     }
-
-    let smtp_username = env::var("SMTP_USERNAME").expect("SMTP_USERNAME must be set");
-    let smtp_password = env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
-    let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
-    let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
-
-    let mailer = Mailer::new(
-        Mailbox::new(
-            Some("StatCollector Reminder".to_string()),
-            smtp_username.parse().unwrap(),
-        ),
-        &smtp_host,
-        587,
-        std::time::Duration::from_secs(15),
-        Credentials::new(smtp_username, smtp_password),
-        &base_url,
-    );
 
     let docs: Router = SwaggerUi::new("/docs")
         .url("/api.json", ApiDoc::openapi())
@@ -182,16 +151,10 @@ async fn main() {
     let collector = collector.layer(NormalizePathLayer::trim_trailing_slash());
 
     // Slash trailing normalization breaks SwaggerUI, so this must be in a separate router
-    let app = Router::new()
+    
+
+    Router::new()
         .route("/", get(main_page))
         .merge(collector)
-        .merge(docs);
-
-    // run it with hyper
-    let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 5433));
-    let listener = TcpListener::bind(addr).await.unwrap();
-    tracing::debug!("listening on {addr}");
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+        .merge(docs)
 }

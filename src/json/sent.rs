@@ -67,7 +67,7 @@ mod test {
     use super::*;
     use crate::json;
     use once_cell::sync::Lazy;
-    
+
     use time::Month;
 
     static PERIOD: Lazy<Period> = Lazy::new(|| Period {

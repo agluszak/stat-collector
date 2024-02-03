@@ -60,6 +60,7 @@ diesel::table! {
         name -> Text,
         mail -> Text,
         placement_type_id -> Uuid,
+        submitted_date -> Timestamptz,
     }
 }
 
