@@ -1,8 +1,6 @@
-
-
 use std::sync::Arc;
 
-use crate::logic::email::{Mailer};
+use crate::logic::email::Mailer;
 use axum::extract::FromRef;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -13,12 +11,7 @@ use axum::{
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-
-
-
-
 use tower_http::normalize_path::NormalizePathLayer;
-
 
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -42,6 +35,7 @@ use crate::routes::supplier::submit::__path_submit_input;
 use crate::routes::supplier::submit::submit_input;
 
 pub mod db;
+mod email_templates;
 mod errors;
 pub mod json;
 pub mod logic;
@@ -140,7 +134,7 @@ pub async fn build_app(db_url: String, mailer: Arc<dyn Mailer>) -> Router {
             get(get_collector_config),
         )
         .route(
-            "/statistics_collector/:id/send_emails",
+            "/statistics_collector/:id/send_emails/:reminder_type",
             post(send_reminder_emails),
         )
         .route("/supplier/:id", get(show_input_page))
@@ -151,7 +145,6 @@ pub async fn build_app(db_url: String, mailer: Arc<dyn Mailer>) -> Router {
     let collector = collector.layer(NormalizePathLayer::trim_trailing_slash());
 
     // Slash trailing normalization breaks SwaggerUI, so this must be in a separate router
-    
 
     Router::new()
         .route("/", get(main_page))

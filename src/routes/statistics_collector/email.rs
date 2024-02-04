@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::db::StatCollectorId;
 
 use crate::errors::AppError;
-use crate::logic::email::Mailer;
+use crate::logic::email::{Mailer, ReminderType};
 use crate::{db, schema};
 
 /// Sends reminder emails to all suppliers of a statistics collector
@@ -23,7 +23,7 @@ use crate::{db, schema};
 pub async fn send_reminder_emails(
     State(mailer): State<Arc<dyn Mailer>>,
     State(pool): State<deadpool_diesel::postgres::Pool>,
-    Path(id): Path<StatCollectorId>,
+    Path((id, reminder_type)): Path<(StatCollectorId, ReminderType)>,
 ) -> Result<(), AppError> {
     let conn = pool.get().await?;
     conn.interact(move |conn| {
@@ -44,6 +44,7 @@ pub async fn send_reminder_emails(
                     stat_collector.clone(),
                     supplier.mail.parse().unwrap(),
                     supplier.id,
+                    reminder_type,
                 )?;
             }
 

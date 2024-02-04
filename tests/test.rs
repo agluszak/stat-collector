@@ -21,7 +21,7 @@ async fn main() {
 
     let mailer = Arc::new(MockMailer::new());
 
-    let app = build_app(connection_string, mailer).await;
+    let app = build_app(connection_string, mailer.clone()).await;
 
     let server = TestServer::new(app).unwrap();
 
@@ -119,6 +119,4 @@ async fn main() {
         new_collector.placement_types.len()
     );
     assert_eq!(collector.id, StatCollectorId::from(id));
-
-    // TODO: the rest of the fields
 }

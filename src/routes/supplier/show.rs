@@ -3,7 +3,7 @@ use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
-use time::OffsetDateTime;
+
 
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
@@ -118,31 +118,31 @@ pub async fn show_input_page(
             h2 { "Client:" (input_page_data.client) }
 
             // Table should look like this:
-            // | (empty) | period 1 | period 1 | period 2 | period 2 |
-            // | (empty)  | stat 1   | stat 2   | stat 1   | stat 2   |
-            // | copy 1   | supplier    | supplier    | supplier    | supplier    |
-            // | copy 2   | supplier    | supplier    | supplier    | supplier    |
+            // | (empty)  | copy 1 | copy 1 | copy 2 | copy 2 |
+            // | (empty)  | stat 1 | stat 2 | stat 1   | stat 2   |
+            // | period 1   | supplier    | supplier    | supplier    | supplier    |
+            // | period 2   | supplier    | supplier    | supplier    | supplier    |
 
             form method="post" action=(format!("/supplier/{}", supplier_id)) {
                 table {
                     tr {
                         th { "" }
-                        @for period in &input_page_data.periods {
-                            th colspan=(input_page_data.statistic_types.len()) { (period.name) }
+                        @for copy in &input_page_data.copies {
+                            th colspan=(input_page_data.statistic_types.len()) { (copy.name) }
                         }
                     }
                     tr {
                         th { "" }
-                        @for _period in &input_page_data.periods {
+                        @for _copy in &input_page_data.copies {
                             @for statistic_type in &input_page_data.statistic_types {
                                 th { (statistic_type.name) }
                             }
                         }
                     }
-                    @for copy in &input_page_data.copies {
+                    @for period in &input_page_data.periods {
                         tr {
-                            th { (copy.name) }
-                            @for period in &input_page_data.periods {
+                            th { (period.name) }
+                            @for copy in &input_page_data.copies {
                                 @for statistic_type in &input_page_data.statistic_types {
                                     @let form_key = FormKey {
                                         period_id: period.id,

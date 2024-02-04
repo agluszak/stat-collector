@@ -6,8 +6,8 @@ use axum::extract::{Path, State};
 
 use axum::response::Redirect;
 use axum::Form;
-use diesel::upsert::excluded;
 use diesel::prelude::*;
+use diesel::upsert::excluded;
 use diesel::RunQueryDsl;
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
