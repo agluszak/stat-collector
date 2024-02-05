@@ -1,6 +1,3 @@
-
-
-
 use mockall::automock;
 use time::OffsetDateTime;
 

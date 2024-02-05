@@ -6,7 +6,6 @@ use std::collections::BTreeMap;
 use time::format_description::FormatItem;
 use time::macros::format_description;
 
-
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
 
@@ -25,9 +24,8 @@ struct InputPageData {
     values: BTreeMap<FormKey, i32>,
 }
 
-static DATETIME_FORMAT: &[FormatItem<'_>] = format_description!(
-    "[hour]:[minute]:[second] [day]-[month]-[year]"
-);
+static DATETIME_FORMAT: &[FormatItem<'_>] =
+    format_description!("[hour]:[minute]:[second] [day]-[month]-[year]");
 
 /// Shows the supplier page
 #[utoipa::path(

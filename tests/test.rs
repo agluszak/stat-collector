@@ -1,13 +1,13 @@
 use axum_test::TestServer;
+
 use stat_collector::db::StatCollectorId;
 use stat_collector::logic::email::MockMailer;
+use stat_collector::logic::email::ReminderType::{FirstReminder, SecondReminder};
 use stat_collector::{build_app, db, json};
 use std::sync::{Arc, Mutex};
-use mockall::Sequence;
 use testcontainers_modules::{postgres::Postgres, testcontainers::clients::Cli};
 use time::{Date, Month};
 use uuid::Uuid;
-use stat_collector::logic::email::ReminderType::{FirstReminder, SecondReminder};
 
 #[tokio::test]
 async fn main() {
@@ -122,29 +122,40 @@ async fn main() {
     );
     assert_eq!(collector.id, StatCollectorId::from(id));
 
-    mailer.lock().unwrap().expect_send_reminder().withf(
-        move |_, _, _, reminder_type| {
-            *reminder_type == FirstReminder
-        }).times(3).returning(|_, _, _, _| Ok(()));
+    mailer
+        .lock()
+        .unwrap()
+        .expect_send_reminder()
+        .withf(move |_, _, _, reminder_type| *reminder_type == FirstReminder)
+        .times(3)
+        .returning(|_, _, _, _| Ok(()));
 
     // Test manual email sending
     let response = server
-        .post(&format!("/statistics_collector/{}/send_emails/FirstReminder", id))
+        .post(&format!(
+            "/statistics_collector/{}/send_emails/FirstReminder",
+            id
+        ))
         .await;
 
     response.assert_status_ok();
 
     mailer.lock().unwrap().checkpoint();
 
-    mailer.lock().unwrap().expect_send_reminder().withf(
-        move |_, _, _, reminder_type| {
-            *reminder_type == SecondReminder
-        }).times(3).returning(|_, _, _, _| Ok(()));
+    mailer
+        .lock()
+        .unwrap()
+        .expect_send_reminder()
+        .withf(move |_, _, _, reminder_type| *reminder_type == SecondReminder)
+        .times(3)
+        .returning(|_, _, _, _| Ok(()));
 
     let response = server
-        .post(&format!("/statistics_collector/{}/send_emails/SecondReminder", id))
+        .post(&format!(
+            "/statistics_collector/{}/send_emails/SecondReminder",
+            id
+        ))
         .await;
 
     response.assert_status_ok();
-
 }
