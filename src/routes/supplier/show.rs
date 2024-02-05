@@ -3,6 +3,8 @@ use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
+use time::format_description::FormatItem;
+use time::macros::format_description;
 
 
 use crate::db::{StatisticsCollector, SupplierId};
@@ -22,6 +24,10 @@ struct InputPageData {
     statistic_types: Vec<db::StatisticType>,
     values: BTreeMap<FormKey, i32>,
 }
+
+static DATETIME_FORMAT: &[FormatItem<'_>] = format_description!(
+    "[hour]:[minute]:[second] [day]-[month]-[year]"
+);
 
 /// Shows the supplier page
 #[utoipa::path(
@@ -118,10 +124,10 @@ pub async fn show_input_page(
             h2 { "Client:" (input_page_data.client) }
 
             // Table should look like this:
-            // | (empty)  | copy 1 | copy 1 | copy 2 | copy 2 |
-            // | (empty)  | stat 1 | stat 2 | stat 1   | stat 2   |
-            // | period 1   | supplier    | supplier    | supplier    | supplier    |
-            // | period 2   | supplier    | supplier    | supplier    | supplier    |
+            // | (empty)    | copy 1 | copy 1 | copy 2 | copy 2 |
+            // | (empty)    | stat 1 | stat 2 | stat 1 | stat 2 |
+            // | period 1   | input  | input  | input  | input  |
+            // | period 2   | input  | input  | input  | input  |
 
             form method="post" action=(format!("/supplier/{}", supplier_id)) {
                 table {
@@ -160,7 +166,7 @@ pub async fn show_input_page(
                     }
                 }
                 p {
-                    "Last submitted: " (input_page_data.supplier.submitted_date.format(&time::format_description::well_known::Iso8601::DATE_TIME_OFFSET).unwrap())
+                    "Last submitted: " (input_page_data.supplier.submitted_date.format(DATETIME_FORMAT).unwrap())
                 }
                 input type="submit" value="Submit";
             }

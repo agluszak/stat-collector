@@ -1,7 +1,7 @@
 use axum::extract::Path;
 use axum::extract::State;
 use diesel::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::db::StatCollectorId;
 
@@ -21,7 +21,7 @@ use crate::{db, schema};
     )
 )]
 pub async fn send_reminder_emails(
-    State(mailer): State<Arc<dyn Mailer>>,
+    State(mailer): State<Arc<Mutex<dyn Mailer>>>,
     State(pool): State<deadpool_diesel::postgres::Pool>,
     Path((id, reminder_type)): Path<(StatCollectorId, ReminderType)>,
 ) -> Result<(), AppError> {
@@ -40,7 +40,7 @@ pub async fn send_reminder_emails(
                 .load(conn)?;
 
             for supplier in suppliers {
-                mailer.send_reminder(
+                mailer.lock().unwrap().send_reminder(
                     stat_collector.clone(),
                     supplier.mail.parse().unwrap(),
                     supplier.id,

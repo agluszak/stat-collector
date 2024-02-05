@@ -105,8 +105,6 @@ pub fn reminder(
                                                         td width="6%" {}
                                                         td width="94%" class="league-spartan-bold" style="font-size: 13px; padding-top: 2%;" {
                                                             span {
-                                                                "Daniel Statystyka"
-                                                                br;
                                                                 "Stats Collector"
                                                                 br;
                                                                 "SIGMA BIS S.A."

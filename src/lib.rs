@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::logic::email::Mailer;
 use axum::extract::FromRef;
@@ -81,7 +81,7 @@ struct ApiDoc;
 #[derive(Clone)]
 struct AppState {
     pool: deadpool_diesel::postgres::Pool,
-    mailer: Arc<dyn Mailer>,
+    mailer: Arc<Mutex<dyn Mailer>>,
 }
 
 impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
@@ -90,7 +90,7 @@ impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
     }
 }
 
-impl FromRef<AppState> for Arc<dyn Mailer> {
+impl FromRef<AppState> for Arc<Mutex<dyn Mailer>> {
     fn from_ref(state: &AppState) -> Self {
         state.mailer.clone()
     }
@@ -100,7 +100,7 @@ async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Wrong URL")
 }
 
-pub async fn build_app(db_url: String, mailer: Arc<dyn Mailer>) -> Router {
+pub async fn build_app(db_url: String, mailer: Arc<Mutex<dyn Mailer>>) -> Router {
     // set up connection pool
     let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
     let pool = deadpool_diesel::postgres::Pool::builder(manager)

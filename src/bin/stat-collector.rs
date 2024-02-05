@@ -5,7 +5,7 @@ use stat_collector::build_app;
 use stat_collector::logic::email::AppMailer;
 use std::env;
 use std::net::{Ipv4Addr, SocketAddr};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tracing::warn;
 use tracing_subscriber::layer::SubscriberExt;
@@ -44,7 +44,7 @@ async fn main() {
         &base_url,
     );
 
-    let app = build_app(db_url, Arc::new(mailer)).await;
+    let app = build_app(db_url, Arc::new(Mutex::new(mailer))).await;
 
     // run it with hyper
     let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 5433));
