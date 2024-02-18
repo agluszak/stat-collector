@@ -10,6 +10,7 @@ use axum::{
     Router,
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use rust_i18n::{i18n, set_locale};
 
 use tower_http::normalize_path::NormalizePathLayer;
 
@@ -100,7 +101,11 @@ async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Wrong URL")
 }
 
+i18n!("locales", fallback = "pl");
+
 pub async fn build_app(db_url: String, mailer: Arc<Mutex<dyn Mailer>>) -> Router {
+    set_locale("pl");
+
     // set up connection pool
     let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
     let pool = deadpool_diesel::postgres::Pool::builder(manager)

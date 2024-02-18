@@ -10,6 +10,6 @@ struct AppClock;
 
 impl Clock for AppClock {
     fn now(&self) -> OffsetDateTime {
-        OffsetDateTime::now_utc()
+        OffsetDateTime::now_local().expect("Failed to get current time")
     }
 }

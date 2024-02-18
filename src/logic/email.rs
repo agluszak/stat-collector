@@ -106,11 +106,11 @@ impl Mailer for AppMailer {
         let to_email = to_email.into();
         let subject = match reminder_type {
             ReminderType::FirstReminder => format!(
-                "Statystyki kampanii {} dla klienta {}",
+                "Prośba o statystyki do kampanii {} dla klienta {}",
                 stat_collector.name, stat_collector.client
             ),
             ReminderType::SecondReminder => format!(
-                "Pilne: Statystyki kampanii {} dla klienta {} - przypomnienie",
+                "Przypomnienie: Prośba o statystyki do kampanii {} dla klienta {}",
                 stat_collector.name, stat_collector.client
             ),
         };

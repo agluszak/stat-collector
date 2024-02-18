@@ -1,0 +1,13 @@
+_version: 2
+client:
+  en: Client
+  pl: Klient
+copy:
+  en: Copy
+  pl: Kreacja
+last_submitted:
+  pl: Data ostatniej aktualizacji
+  en: Last submitted
+submit:
+  en: Submit
+  pl: Wyślij

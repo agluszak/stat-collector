@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use axum::{extract::State, response::Json};
 use diesel::prelude::*;
 use time::OffsetDateTime;
@@ -6,6 +7,8 @@ use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTyp
 
 use crate::errors::AppError;
 use crate::{db, json, schema};
+use crate::logic::email::Mailer;
+use crate::logic::time::Clock;
 
 /// Creates a new statistics collector
 #[utoipa::path(
@@ -18,6 +21,7 @@ use crate::{db, json, schema};
 )]
 pub async fn create_statistics_collector(
     State(pool): State<deadpool_diesel::postgres::Pool>,
+    State(clock): State<Arc<Mutex<dyn Clock>>>,
     Json(statistics_collector): Json<json::received::StatCollector>,
 ) -> Result<Json<StatCollectorId>, AppError> {
     let conn = pool.get().await?;
@@ -112,7 +116,7 @@ pub async fn create_statistics_collector(
                                     name: supplier.name.clone(),
                                     mail: supplier.mail.to_string(),
                                     placement_type_id,
-                                    submitted_date: OffsetDateTime::now_utc(),
+                                    submitted_date: clock.lock().unwrap().now(),
                                 }
                             })
                             .collect::<Vec<db::Supplier>>()

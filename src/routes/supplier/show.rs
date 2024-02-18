@@ -3,6 +3,7 @@ use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
 use std::collections::BTreeMap;
+use rust_i18n::t;
 use time::format_description::FormatItem;
 use time::macros::format_description;
 
@@ -109,17 +110,19 @@ pub async fn show_input_page(
         .await??;
 
     let title = format!(
-        "{} - {} for {}",
+        "{} - {} / {}",
         input_page_data.placement_type.name,
         input_page_data.supplier.name,
         input_page_data.collector_name
     );
 
+    let now = time::OffsetDateTime::now_utc().date();
+
     let ok = render_html::template(
         &title,
         html! {
-            h1 { (input_page_data.placement_type.name) " - " (input_page_data.supplier.name) " for " (input_page_data.collector_name)  }
-            h2 { "Client:" (input_page_data.client) }
+            h1 { (input_page_data.placement_type.name) " - " (input_page_data.supplier.name) " / " (input_page_data.collector_name)  }
+            h2 { (t!("client")) ":" (input_page_data.client) }
 
             // Table should look like this:
             // | (empty)    | copy 1 | copy 1 | copy 2 | copy 2 |
@@ -132,7 +135,7 @@ pub async fn show_input_page(
                     tr {
                         th { "" }
                         @for copy in &input_page_data.copies {
-                            th colspan=(input_page_data.statistic_types.len()) { (copy.name) }
+                            th colspan=(input_page_data.statistic_types.len()) { (t!("copy")) ":" (copy.name) }
                         }
                     }
                     tr {
@@ -155,8 +158,9 @@ pub async fn show_input_page(
                                     };
                                     @let name = format!("{}", form_key);
                                     @let value = input_page_data.values.get(&form_key).copied().unwrap_or(0);
+                                    @let disabled = period.start > now;
                                     td {
-                                        input type="number" name=(name) id=(name) value=(value);
+                                        input type="number" name=(name) id=(name) value=(value) disabled[disabled];
                                     }
                                 }
                             }
@@ -164,9 +168,9 @@ pub async fn show_input_page(
                     }
                 }
                 p {
-                    "Last submitted: " (input_page_data.supplier.submitted_date.format(DATETIME_FORMAT).unwrap())
+                    (t!("last_submitted")) ": " (input_page_data.supplier.submitted_date.format(DATETIME_FORMAT).unwrap())
                 }
-                input type="submit" value="Submit";
+                input type="submit" value=(t!("submit"));
             }
         },
     );

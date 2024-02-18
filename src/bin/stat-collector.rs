@@ -27,6 +27,7 @@ async fn main() {
 
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
+    let smtp_name = env::var("SMTP_NAME").expect("SMTP_NAME must be set");
     let smtp_username = env::var("SMTP_USERNAME").expect("SMTP_USERNAME must be set");
     let smtp_password = env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
     let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
@@ -34,7 +35,7 @@ async fn main() {
 
     let mailer = AppMailer::new(
         Mailbox::new(
-            Some("StatCollector Reminder".to_string()),
+            Some(smtp_name),
             smtp_username.parse().unwrap(),
         ),
         &smtp_host,
