@@ -3,6 +3,7 @@ use axum_test::TestServer;
 use stat_collector::db::StatCollectorId;
 use stat_collector::logic::email::MockMailer;
 use stat_collector::logic::email::ReminderType::{FirstReminder, SecondReminder};
+use stat_collector::logic::time::AppClock;
 use stat_collector::{build_app, db, json};
 use std::sync::{Arc, Mutex};
 use testcontainers_modules::{postgres::Postgres, testcontainers::clients::Cli};
@@ -22,8 +23,9 @@ async fn main() {
     );
 
     let mailer = Arc::new(Mutex::new(MockMailer::new()));
+    let clock = Arc::new(Mutex::new(AppClock));
 
-    let app = build_app(connection_string, mailer.clone()).await;
+    let app = build_app(connection_string, mailer.clone(), clock.clone()).await;
 
     let server = TestServer::new(app).unwrap();
 

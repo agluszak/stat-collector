@@ -14,6 +14,7 @@ use rust_i18n::{i18n, set_locale};
 
 use tower_http::normalize_path::NormalizePathLayer;
 
+use crate::logic::time::Clock;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -83,6 +84,7 @@ struct ApiDoc;
 struct AppState {
     pool: deadpool_diesel::postgres::Pool,
     mailer: Arc<Mutex<dyn Mailer>>,
+    clock: Arc<Mutex<dyn Clock>>,
 }
 
 impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
@@ -97,13 +99,23 @@ impl FromRef<AppState> for Arc<Mutex<dyn Mailer>> {
     }
 }
 
+impl FromRef<AppState> for Arc<Mutex<dyn Clock>> {
+    fn from_ref(state: &AppState) -> Self {
+        state.clock.clone()
+    }
+}
+
 async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Wrong URL")
 }
 
 i18n!("locales", fallback = "pl");
 
-pub async fn build_app(db_url: String, mailer: Arc<Mutex<dyn Mailer>>) -> Router {
+pub async fn build_app(
+    db_url: String,
+    mailer: Arc<Mutex<dyn Mailer>>,
+    clock: Arc<Mutex<dyn Clock>>,
+) -> Router {
     set_locale("pl");
 
     // set up connection pool
@@ -144,7 +156,11 @@ pub async fn build_app(db_url: String, mailer: Arc<Mutex<dyn Mailer>>) -> Router
         )
         .route("/supplier/:id", get(show_input_page))
         .route("/supplier/:id", post(submit_input))
-        .with_state(AppState { pool, mailer })
+        .with_state(AppState {
+            pool,
+            mailer,
+            clock,
+        })
         .fallback(handler_404);
 
     let collector = collector.layer(NormalizePathLayer::trim_trailing_slash());

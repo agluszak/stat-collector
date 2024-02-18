@@ -1,13 +1,12 @@
-use std::sync::{Arc, Mutex};
 use axum::{extract::State, response::Json};
 use diesel::prelude::*;
-use time::OffsetDateTime;
+use std::sync::{Arc, Mutex};
 
 use crate::db::{CopyId, PeriodId, PlacementTypeId, StatCollectorId, StatisticTypeId, SupplierId};
 
 use crate::errors::AppError;
 use crate::{db, json, schema};
-use crate::logic::email::Mailer;
+
 use crate::logic::time::Clock;
 
 /// Creates a new statistics collector

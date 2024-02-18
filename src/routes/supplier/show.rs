@@ -2,8 +2,8 @@ use axum::extract::Path;
 use axum::extract::State;
 use diesel::prelude::*;
 use maud::{html, Markup};
-use std::collections::BTreeMap;
 use rust_i18n::t;
+use std::collections::BTreeMap;
 use time::format_description::FormatItem;
 use time::macros::format_description;
 

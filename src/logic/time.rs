@@ -6,7 +6,7 @@ pub trait Clock: Send + Sync + 'static {
     fn now(&self) -> OffsetDateTime;
 }
 
-struct AppClock;
+pub struct AppClock;
 
 impl Clock for AppClock {
     fn now(&self) -> OffsetDateTime {

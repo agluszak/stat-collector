@@ -3,6 +3,7 @@ use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use stat_collector::build_app;
 use stat_collector::logic::email::AppMailer;
+use stat_collector::logic::time::AppClock;
 use std::env;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::{Arc, Mutex};
@@ -25,7 +26,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let smtp_name = env::var("SMTP_NAME").expect("SMTP_NAME must be set");
     let smtp_username = env::var("SMTP_USERNAME").expect("SMTP_USERNAME must be set");
@@ -34,18 +35,18 @@ async fn main() {
     let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
 
     let mailer = AppMailer::new(
-        Mailbox::new(
-            Some(smtp_name),
-            smtp_username.parse().unwrap(),
-        ),
+        Mailbox::new(Some(smtp_name), smtp_username.parse().unwrap()),
         &smtp_host,
         587,
         std::time::Duration::from_secs(15),
         Credentials::new(smtp_username, smtp_password),
         &base_url,
     );
+    let mailer = Arc::new(Mutex::new(mailer));
 
-    let app = build_app(db_url, Arc::new(Mutex::new(mailer))).await;
+    let clock = Arc::new(Mutex::new(AppClock));
+
+    let app = build_app(db_url, mailer, clock).await;
 
     // run it with hyper
     let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 5433));
