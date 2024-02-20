@@ -46,7 +46,13 @@ async fn main() {
 
     let clock = Arc::new(Mutex::new(AppClock));
 
-    let app = build_app(db_url, mailer, clock).await;
+    // set up connection pool
+    let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
+    let db_pool = deadpool_diesel::postgres::Pool::builder(manager)
+        .build()
+        .unwrap();
+
+    let app = build_app(db_pool, mailer, clock).await;
 
     // run it with hyper
     let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 5433));

@@ -29,6 +29,7 @@ serde_with = "3"
 time = { version = "0.3", features = ["serde", "formatting", "parsing", "local-offset"] }
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-cron-scheduler = { version = "0.10.0", features = ["signal"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["normalize-path"] }
 tracing = "0.1"

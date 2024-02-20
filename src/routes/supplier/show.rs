@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use maud::{html, Markup};
 use rust_i18n::t;
 use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
 use time::format_description::FormatItem;
 use time::macros::format_description;
 
@@ -13,6 +14,7 @@ use crate::routes::supplier::submit::FormKey;
 use crate::errors::AppError;
 use crate::logic::render_html;
 use crate::{db, schema};
+use crate::logic::time::Clock;
 
 struct InputPageData {
     collector_name: String,
@@ -42,6 +44,7 @@ static DATETIME_FORMAT: &[FormatItem<'_>] =
 )]
 pub async fn show_input_page(
     State(pool): State<deadpool_diesel::postgres::Pool>,
+    State(clock): State<Arc<Mutex<dyn Clock>>>,
     Path(supplier_id): Path<SupplierId>,
 ) -> Result<Markup, AppError> {
     let conn = pool.get().await?;
@@ -116,7 +119,7 @@ pub async fn show_input_page(
         input_page_data.collector_name
     );
 
-    let now = time::OffsetDateTime::now_utc().date();
+    let now = clock.lock().unwrap().now().date();
 
     let ok = render_html::template(
         &title,

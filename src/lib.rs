@@ -9,6 +9,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use deadpool_diesel::postgres;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use rust_i18n::{i18n, set_locale};
 
@@ -82,14 +83,14 @@ struct ApiDoc;
 
 #[derive(Clone)]
 struct AppState {
-    pool: deadpool_diesel::postgres::Pool,
+    db_pool: postgres::Pool,
     mailer: Arc<Mutex<dyn Mailer>>,
     clock: Arc<Mutex<dyn Clock>>,
 }
 
 impl FromRef<AppState> for deadpool_diesel::postgres::Pool {
     fn from_ref(state: &AppState) -> Self {
-        state.pool.clone()
+        state.db_pool.clone()
     }
 }
 
@@ -112,21 +113,15 @@ async fn handler_404() -> impl IntoResponse {
 i18n!("locales", fallback = "pl");
 
 pub async fn build_app(
-    db_url: String,
+    db_pool: postgres::Pool,
     mailer: Arc<Mutex<dyn Mailer>>,
     clock: Arc<Mutex<dyn Clock>>,
 ) -> Router {
     set_locale("pl");
 
-    // set up connection pool
-    let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
-    let pool = deadpool_diesel::postgres::Pool::builder(manager)
-        .build()
-        .unwrap();
-
     // run the migrations on server startup
     {
-        let conn = pool.get().await.unwrap();
+        let conn = db_pool.get().await.unwrap();
         conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
             .await
             .unwrap()
@@ -157,7 +152,7 @@ pub async fn build_app(
         .route("/supplier/:id", get(show_input_page))
         .route("/supplier/:id", post(submit_input))
         .with_state(AppState {
-            pool,
+            db_pool,
             mailer,
             clock,
         })
