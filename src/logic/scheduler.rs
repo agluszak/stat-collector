@@ -104,6 +104,9 @@ async fn second_reminder(
     Ok(())
 }
 
+const FIRST_REMINDER_SCHEDULE: &str = "0 0 8 * * *";
+const SECOND_REMINDER_SCHEDULE: &str = "0 0 15 * * *";
+
 pub async fn start_scheduler(
     db_pool: postgres::Pool,
     clock: Arc<Mutex<dyn Clock>>,
@@ -116,18 +119,21 @@ pub async fn start_scheduler(
         let clock = clock.clone();
         let mailer = mailer.clone();
         sched
-            .add(Job::new_async("0 8 * * *", move |_uuid, _l| {
-                let db_pool = db_pool.clone();
-                let clock = clock.clone();
-                let mailer = mailer.clone();
-                Box::pin(async move {
-                    first_reminder(db_pool, clock, mailer)
-                        .await
-                        .unwrap_or_else(|e| {
-                            log::error!("Failed to send first reminder: {}", e);
-                        });
-                })
-            })?)
+            .add(Job::new_async(
+                FIRST_REMINDER_SCHEDULE,
+                move |_uuid, _l| {
+                    let db_pool = db_pool.clone();
+                    let clock = clock.clone();
+                    let mailer = mailer.clone();
+                    Box::pin(async move {
+                        first_reminder(db_pool, clock, mailer)
+                            .await
+                            .unwrap_or_else(|e| {
+                                log::error!("Failed to send first reminder: {}", e);
+                            });
+                    })
+                },
+            )?)
             .await?;
     }
     {
@@ -135,18 +141,21 @@ pub async fn start_scheduler(
         let clock = clock.clone();
         let mailer = mailer.clone();
         sched
-            .add(Job::new_async("0 15 * * *", move |_uuid, _l| {
-                let db_pool = db_pool.clone();
-                let clock = clock.clone();
-                let mailer = mailer.clone();
-                Box::pin(async move {
-                    second_reminder(db_pool, clock, mailer)
-                        .await
-                        .unwrap_or_else(|e| {
-                            log::error!("Failed to send second reminder: {}", e);
-                        });
-                })
-            })?)
+            .add(Job::new_async(
+                SECOND_REMINDER_SCHEDULE,
+                move |_uuid, _l| {
+                    let db_pool = db_pool.clone();
+                    let clock = clock.clone();
+                    let mailer = mailer.clone();
+                    Box::pin(async move {
+                        second_reminder(db_pool, clock, mailer)
+                            .await
+                            .unwrap_or_else(|e| {
+                                log::error!("Failed to send second reminder: {}", e);
+                            });
+                    })
+                },
+            )?)
             .await?;
     }
 
@@ -154,4 +163,19 @@ pub async fn start_scheduler(
     sched.start().await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::logic::scheduler::{FIRST_REMINDER_SCHEDULE, SECOND_REMINDER_SCHEDULE};
+
+    #[test]
+    fn schedules_can_be_parsed() {
+        let _ = tokio_cron_scheduler::JobBuilder::new()
+            .with_schedule(FIRST_REMINDER_SCHEDULE)
+            .unwrap();
+        let _ = tokio_cron_scheduler::JobBuilder::new()
+            .with_schedule(SECOND_REMINDER_SCHEDULE)
+            .unwrap();
+    }
 }
