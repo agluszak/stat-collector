@@ -1,9 +1,9 @@
 use crate::db::{PeriodId, PlacementTypeId, StatCollectorId, SupplierId};
 use crate::json::date_serde;
+use chrono::NaiveDate;
 use lettre::Address;
 use serde::Deserialize;
 use serde::Serialize;
-use time::Date;
 use utoipa::{ToResponse, ToSchema};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema, ToResponse)]
@@ -25,10 +25,10 @@ pub struct Period {
     pub name: String,
     #[serde(with = "date_serde")]
     #[schema(example = "2021.01.01")]
-    pub start_date: Date,
+    pub start_date: NaiveDate,
     #[serde(with = "date_serde")]
     #[schema(example = "2021.12.25")]
-    pub end_date: Date,
+    pub end_date: NaiveDate,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -68,13 +68,11 @@ mod test {
     use crate::json;
     use once_cell::sync::Lazy;
 
-    use time::Month;
-
     static PERIOD: Lazy<Period> = Lazy::new(|| Period {
         id: PeriodId::new(),
         name: "test period".to_string(),
-        start_date: Date::from_calendar_date(2021, Month::April, 2).unwrap(),
-        end_date: Date::from_calendar_date(2021, Month::April, 3).unwrap(),
+        start_date: NaiveDate::from_ymd_opt(2021, 4, 2).unwrap(),
+        end_date: NaiveDate::from_ymd_opt(2021, 4, 3).unwrap(),
     });
 
     static SUPPLIER: Lazy<Supplier> = Lazy::new(|| Supplier {

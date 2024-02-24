@@ -1,5 +1,6 @@
 use axum_test::TestServer;
 
+use chrono::NaiveDate;
 use stat_collector::db::StatCollectorId;
 use stat_collector::logic::email::MockMailer;
 use stat_collector::logic::email::ReminderType::{FirstReminder, SecondReminder};
@@ -7,7 +8,6 @@ use stat_collector::logic::time::AppClock;
 use stat_collector::{build_app, db, json};
 use std::sync::{Arc, Mutex};
 use testcontainers_modules::{postgres::Postgres, testcontainers::clients::Cli};
-use time::{Date, Month};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -22,10 +22,18 @@ async fn main() {
         node.get_host_port_ipv4(5432)
     );
 
+    let manager = deadpool_diesel::postgres::Manager::new(
+        connection_string,
+        deadpool_diesel::Runtime::Tokio1,
+    );
+    let db_pool = deadpool_diesel::postgres::Pool::builder(manager)
+        .build()
+        .unwrap();
+
     let mailer = Arc::new(Mutex::new(MockMailer::new()));
     let clock = Arc::new(Mutex::new(AppClock));
 
-    let app = build_app(connection_string, mailer.clone(), clock.clone()).await;
+    let app = build_app(db_pool, mailer.clone(), clock.clone()).await;
 
     let server = TestServer::new(app).unwrap();
 
@@ -37,18 +45,18 @@ async fn main() {
         periods: vec![
             json::received::Period {
                 name: "2023.11.08 - 11.14".to_string(),
-                start_date: Date::from_calendar_date(2023, Month::November, 8).unwrap(),
-                end_date: Date::from_calendar_date(2023, Month::November, 14).unwrap(),
+                start_date: NaiveDate::from_ymd_opt(2023, 11, 8).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2023, 11, 14).unwrap(),
             },
             json::received::Period {
                 name: "2023.11.15 - 11.21".to_string(),
-                start_date: Date::from_calendar_date(2023, Month::November, 15).unwrap(),
-                end_date: Date::from_calendar_date(2023, Month::November, 21).unwrap(),
+                start_date: NaiveDate::from_ymd_opt(2023, 11, 15).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2023, 11, 21).unwrap(),
             },
             json::received::Period {
                 name: "2023.11.22 - 11.28".to_string(),
-                start_date: Date::from_calendar_date(2023, Month::November, 22).unwrap(),
-                end_date: Date::from_calendar_date(2023, Month::November, 28).unwrap(),
+                start_date: NaiveDate::from_ymd_opt(2023, 11, 22).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2023, 11, 28).unwrap(),
             },
         ],
         placement_types: vec![

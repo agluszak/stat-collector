@@ -49,6 +49,16 @@ mod schema;
 // the migration path is relative to the `CARGO_MANIFEST_DIR`
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("db/migrations/");
 
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub db_url: String,
+    pub smtp_name: String,
+    pub smtp_username: String,
+    pub smtp_password: String,
+    pub smtp_host: String,
+    pub base_url: String,
+}
+
 #[derive(OpenApi)]
 #[openapi(
     paths(

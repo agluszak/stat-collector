@@ -5,16 +5,14 @@ use maud::{html, Markup};
 use rust_i18n::t;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
-use time::format_description::FormatItem;
-use time::macros::format_description;
 
 use crate::db::{StatisticsCollector, SupplierId};
 use crate::routes::supplier::submit::FormKey;
 
 use crate::errors::AppError;
 use crate::logic::render_html;
-use crate::{db, schema};
 use crate::logic::time::Clock;
+use crate::{db, schema};
 
 struct InputPageData {
     collector_name: String,
@@ -27,8 +25,7 @@ struct InputPageData {
     values: BTreeMap<FormKey, i32>,
 }
 
-static DATETIME_FORMAT: &[FormatItem<'_>] =
-    format_description!("[hour]:[minute]:[second] [day]-[month]-[year]");
+static DATETIME_FORMAT: &str = "%H:%M:%S %d-%m-%Y";
 
 /// Shows the supplier page
 #[utoipa::path(
@@ -119,7 +116,7 @@ pub async fn show_input_page(
         input_page_data.collector_name
     );
 
-    let now = clock.lock().unwrap().now().date();
+    let now = clock.lock().unwrap().now().date_naive();
 
     let ok = render_html::template(
         &title,
@@ -171,7 +168,7 @@ pub async fn show_input_page(
                     }
                 }
                 p {
-                    (t!("last_submitted")) ": " (input_page_data.supplier.submitted_date.format(DATETIME_FORMAT).unwrap())
+                    (t!("last_submitted")) ": " (input_page_data.supplier.submitted_date.format(DATETIME_FORMAT))
                 }
                 input type="submit" value=(t!("submit"));
             }

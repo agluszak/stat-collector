@@ -321,8 +321,10 @@ checksum = "5bc015644b92d5890fab7489e49d21f879d5c990186827d42ec511919404f38b"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.0",
 ]
 
@@ -574,10 +576,10 @@ checksum = "62c6fcf842f17f8c78ecf7c81d75c5ce84436b41ee07e03f490fbb5f5a8731d8"
 dependencies = [
  "bitflags 2.4.2",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "itoa",
  "pq-sys",
- "time",
  "uuid",
 ]
 
@@ -1451,15 +1453,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num_threads"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "object"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2199,6 +2192,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "axum-test",
+ "chrono",
  "deadpool-diesel",
  "derive_more",
  "diesel",
@@ -2219,7 +2213,6 @@ dependencies = [
  "testcontainers",
  "testcontainers-modules",
  "thiserror",
- "time",
  "tokio",
  "tokio-cron-scheduler",
  "tower",
@@ -2353,9 +2346,7 @@ checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
 dependencies = [
  "deranged",
  "itoa",
- "libc",
  "num-conv",
- "num_threads",
  "powerfmt",
  "serde",
  "time-core",

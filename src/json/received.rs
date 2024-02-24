@@ -3,7 +3,7 @@ use lettre::Address;
 use serde::Deserialize;
 use serde::Serialize;
 
-use time::Date;
+use chrono::NaiveDate;
 use utoipa::ToSchema;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -23,10 +23,10 @@ pub struct Period {
     pub name: String,
     #[serde(with = "date_serde")]
     #[schema(example = "2021.01.01")]
-    pub start_date: Date,
+    pub start_date: NaiveDate,
     #[serde(with = "date_serde")]
     #[schema(example = "2021.12.25")]
-    pub end_date: Date,
+    pub end_date: NaiveDate,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]

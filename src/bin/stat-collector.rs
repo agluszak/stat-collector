@@ -3,6 +3,7 @@ use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use stat_collector::build_app;
 use stat_collector::logic::email::AppMailer;
+use stat_collector::logic::scheduler::start_scheduler;
 use stat_collector::logic::time::AppClock;
 use std::env;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -51,6 +52,10 @@ async fn main() {
     let db_pool = deadpool_diesel::postgres::Pool::builder(manager)
         .build()
         .unwrap();
+
+    start_scheduler(db_pool.clone(), clock.clone(), mailer.clone())
+        .await
+        .expect("Failed to start scheduler");
 
     let app = build_app(db_pool, mailer, clock).await;
 

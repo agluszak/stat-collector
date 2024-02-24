@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use diesel_derive_newtype::DieselNewType;
 use serde::{Deserialize, Serialize};
 
-use time::{Date, OffsetDateTime};
+use chrono::{DateTime, Local, NaiveDate};
 use utoipa::ToResponse;
 use uuid::Uuid;
 
@@ -87,8 +87,8 @@ impl PeriodId {
 pub struct Period {
     pub id: PeriodId,
     pub name: String,
-    pub start: Date,
-    pub end: Date,
+    pub start: NaiveDate,
+    pub end: NaiveDate,
     pub statistics_collector_id: StatCollectorId,
 }
 
@@ -177,7 +177,7 @@ pub struct Supplier {
     pub name: String,
     pub mail: String,
     pub placement_type_id: PlacementTypeId,
-    pub submitted_date: OffsetDateTime,
+    pub submitted_date: DateTime<Local>,
 }
 
 impl Supplier {
