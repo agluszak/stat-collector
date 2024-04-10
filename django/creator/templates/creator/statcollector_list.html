@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+    {% load bootstrap_icons %}
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog"
+         aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h5>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong><span id="itemNamePlaceholder" class=""></span></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Email Modal -->
+    <div class="modal fade" id="sendEmailModal" tabindex="-1" role="dialog" aria-labelledby="sendEmailModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sendEmailModalLabel">Send Email Reminder</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Which type of email would you like to send?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary reminder-btn"
+                            data-item-type="FirstReminder">First Reminder
+                    </button>
+                    <button type="button" class="btn btn-primary reminder-btn"
+                            data-item-type="SecondReminder">Second Reminder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h1>Statistics Collectors</h1>
+    <div align="right">
+        <a class="btn btn-outline-primary"
+           href="{% url "creator:statcollector_create" %}">{% bs_icon 'plus' size='1.5em' %} Add</a>
+    </div><br/>
+    <div>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Client</th>
+                <th>Name</th>
+                <th>View/Edit/Delete</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for statcollector in statcollector_list %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ statcollector.client }}</td>
+                    <td>{{ statcollector.name }}</td>
+                    <td>
+                        <a
+                                class="btn btn-outline-primary"
+                                title="View"
+                                href="{% url 'creator:statcollector_details' statcollector.id %}"
+                        >{% bs_icon 'eye' size='1.5em' %}</a>
+
+                        <a
+                                class="btn btn-outline-primary"
+                                title="Edit"
+                                href="{% url 'creator:statcollector_edit' statcollector.id %}"
+                        >{% bs_icon 'pencil' size='1.5em' %}</a>
+
+                        <a
+                                class="btn btn-outline-danger delete-btn"
+                                title="Delete"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmDeleteModal"
+                                data-item-id="{{ statcollector.id }}"
+                                data-item-name="{{ statcollector.name }}"
+                        >{% bs_icon 'trash' size='1.5em' %}</a>
+                    </td>
+                    <td>
+                        <a
+                                class="btn btn-outline-primary {% if not statcollector.external_id %}disabled{% endif %}"
+                                title="Visit stats page"
+                                href="{{ statcollector.ext_url }}"
+                        >
+                            {% bs_icon 'signpost' size='1.5em' %}
+                        </a>
+                        <button type="button"
+                                class="btn btn-outline-primary email-btn {% if not statcollector.external_id %}disabled{% endif %}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#sendEmailModal"
+                                data-item-id="{{ statcollector.external_id }}"
+                                title="Send email reminder to suppliers"
+                        >
+                            {% bs_icon 'envelope-at' size='1.5em' %}
+                        </button>
+                        <a
+                                class="btn btn-outline-primary {% if not statcollector.external_id %}disabled{% endif %}"
+                                title="Import statistics to Excel"
+                                href="{% url "creator:xls" statcollector.id %}"
+                        >
+                            {% bs_icon 'file-earmark-spreadsheet' size='1.5em' %}
+                        </a>
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Function to handle delete confirmation
+        document.querySelectorAll('.delete-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const itemId = this.getAttribute('data-item-id');
+                const itemName = this.getAttribute('data-item-name');
+                document.getElementById('confirmDeleteBtn').setAttribute('data-item-id', itemId);
+                document.getElementById('itemNamePlaceholder').textContent = itemName;
+            });
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+            const itemId = this.getAttribute('data-item-id');
+
+            fetch(`/creator/${itemId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+            })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        console.error('Delete failed:', response.statusText);
+                        alert('Delete failed. Please try again.');
+                        $('#confirmDeleteModal').modal('hide');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: Delete failed due to an error. Please try again.');
+                    $('#confirmDeleteModal').modal('hide');
+                });
+        });
+        let statcollectorId;
+        const csrfToken = "{{ csrf_token }}";
+        // function for email reminders
+        document.querySelectorAll('.email-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                statcollectorId = this.getAttribute('data-item-id');
+            });
+        });
+        document.querySelectorAll('.reminder-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                $.ajax({
+                    url: "{% url 'creator:send_email' %}",
+                    type: "POST",
+                    data: {
+                        collector_id: statcollectorId,
+                        reminder_type: this.getAttribute('data-item-type')
+                    },
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                $('#sendEmailModal').modal('hide');
+            });
+        });
+
+    </script>
+
+{% endblock %}

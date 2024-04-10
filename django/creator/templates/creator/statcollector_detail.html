@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block content %}
+    {% load bootstrap_icons %}
+    {% load bootstrap5 %}
+
+    <!-- Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog"
+         aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h5>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong><span id="itemNamePlaceholder" class=""></span></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <a class="btn btn-outline-primary"
+           href={% url "creator:statcollector_list" %}>
+            {% bs_icon 'backspace' size='1.5em' %} back to list
+        </a>
+    </div>
+
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header">
+                <div align="right">
+                    <a class="btn btn-outline-primary"
+                       href="{% url 'creator:statcollector_edit' statcollector.id %}"
+                    >
+                        {% bs_icon 'pencil' size='1.5em' %}
+                    </a>
+                </div>
+                <h3 class="card-title">{{ statcollector.name }}</h3>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tbody>
+                    <tr>
+                        <th scope="row">Start Date:</th>
+                        <td>{{ statcollector.start_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">End Date:</th>
+                        <td>{{ statcollector.end_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Periodicity:</th>
+                        <td>
+                            {{ statcollector.periodicity|title }}
+                            {% if statcollector.weekday %}
+                                ({{ statcollector.weekday|title }})
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">Client:</th>
+                        <td>{{ statcollector.client }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <strong>Placements</strong>
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    {% for iter_placement in statcollector.placements.all %}
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link{% if iter_placement.id == placement.id %} active{% endif %}"
+                               href="{% url 'creator:placement_details' stat_id=statcollector.id placement_id=iter_placement.id %}"
+                            >
+                                {{ iter_placement.type }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'placement_create' %} active{% endif %}"
+                           href="{% url 'creator:placement_create' stat_id=statcollector.id %}"
+                        >
+                            + Add
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="container" style="margin-top: 20px;">
+                    {% block placement %}
+                    {% endblock %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to handle delete confirmation
+        document.querySelectorAll('.delete-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const itemName = this.getAttribute('data-item-name');
+                document.getElementById('itemNamePlaceholder').textContent = itemName;
+            });
+        });
+
+
+    </script>
+
+{% endblock %}

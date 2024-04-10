@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load bootstrap5 %}
+{% block content %}
+    {{ form.media }}
+    <form method="post">
+        {% csrf_token %}
+        {% bootstrap_form form layout='horizontal' %}
+        <a href="javascript:history.go(-1)" class="btn btn-secondary">Cancel</a>
+        {% bootstrap_button "Submit" button_type="submit" button_class="btn-primary" %}
+
+    </form>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const periodicitySelect = document.getElementById('id_periodicity');
+            const weekdayField = document.getElementById('id_weekday');
+            const dontDisplayWeekdayOptions = ['daily', 'monthly', ''];
+
+            function toggleWeekdayField() {
+                const selectedOption = periodicitySelect.options[periodicitySelect.selectedIndex];
+                if (dontDisplayWeekdayOptions.includes(selectedOption.value)) {
+                    weekdayField.closest('.mb-3').style.display = 'none';
+                } else {
+                    weekdayField.closest('.mb-3').removeAttribute('style');
+                }
+            }
+
+            // Initial call to toggle the weekday field based on the initial value of periodicity
+            toggleWeekdayField();
+
+            // Event listener to toggle the weekday field when the periodicity select value changes
+            periodicitySelect.addEventListener('change', toggleWeekdayField);
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'creator/statcollector_detail.html' %}
+{% block placement %}
+    {% load bootstrap5 %}
+    {{ form.media }}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% bootstrap_form form layout="horizontal" %}
+        <div><h5>Copies</h5></div>
+        <div class="container" style="margin: 20px">
+            <div id="copy-formset">
+                {{ copy_formset.management_form }}
+                {% for form in copy_formset.forms %}
+                    <div class="copy-form">
+                        {% for field in form %}
+                            {% if 'DELETE' in field.name %}
+                                {{ field.as_hidden }}
+                            {% elif field.is_hidden %}
+                                {{ field }}
+                            {% else %}
+                                {% bootstrap_field field show_label=False addon_after='<button type="button" class="btn btn-outline-danger delete-copy">X</button>' %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button class="btn btn-outline-primary" type="button" id="add-copy">+</button>
+        </div>
+        <a href="javascript:history.go(-1)" class="btn btn-secondary">Cancel</a>
+        {% bootstrap_button "Submit" button_type="submit" button_class="btn-primary" %}
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const addCopyButton = document.getElementById('add-copy');
+            const copyFormset = document.getElementById('copy-formset');
+            const newCopyForm = `
+            <div>
+                {% for field in copy_formset.empty_form %}
+                  {% if 'DELETE' in field.name %}
+                            {{ field.as_hidden }}
+                        {% elif field.is_hidden %}
+                            {{ field }}
+                        {% else %}
+
+                {% bootstrap_field field show_label=False addon_after='<button type="button" class="btn btn-outline-danger delete-copy">X</button>' %}
+                        {% endif %}
+                {% endfor %}
+            </div>`;
+            let formIndex = {{ copy_formset.total_form_count }};
+
+            addCopyButton.addEventListener('click', function () {
+                const fixedCopyForm = newCopyForm.replace(/__prefix__/g, formIndex);
+                copyFormset.insertAdjacentHTML('beforeend', fixedCopyForm);
+                formIndex++;
+                document.querySelector('input[name="copies-TOTAL_FORMS"]').value = formIndex;
+            });
+
+            copyFormset.addEventListener('click', function (event) {
+                if (event.target && event.target.classList.contains('delete-copy')) {
+                    let copyFieldDiv = event.target.parentElement;
+                    while (copyFieldDiv && !copyFieldDiv.classList.contains('copy-form')) {
+                        copyFieldDiv = copyFieldDiv.parentElement;
+                    }
+                    if (copyFieldDiv) {
+                        let deleteInput = copyFieldDiv.querySelector('input[name$="-DELETE"]');
+                        if (deleteInput) {
+
+                            deleteInput.value = 'on';
+                        }
+                        copyFieldDiv.style.display = 'none';
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}
