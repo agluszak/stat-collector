@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 
 import environ
+import os
 
 env = environ.Env()
 
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     "django_bootstrap_icons",
     "bootstrap_datepicker_plus",
     "creator",
+    "rest_framework"
 ]
 
 MIDDLEWARE = [
@@ -81,10 +83,22 @@ WSGI_APPLICATION = "StatCollector.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': 'db',
+        'PORT': '5432',
+        'OPTIONS': {'options': '-c search_path=django'}
     }
 }
 
@@ -134,4 +148,4 @@ BOOTSTRAP5 = {
 }
 
 # integration
-STAT_COLLECTOR_URL = env("STAT_COLLECTOR_URL")
+STAT_COLLECTOR_URL = os.getenv("STAT_COLLECTOR_URL")
