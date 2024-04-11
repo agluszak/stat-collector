@@ -13,7 +13,7 @@ from .models import StatCollector
 
 
 def get_base_url_headers():
-    url = settings.STAT_COLLECTOR_URL + "statistics_collector"
+    url = settings.STAT_COLLECTOR_INT_URL + "/statistics_collector"
     headers = {"Content-Type": "application/json"}
     return url, headers
 
@@ -25,6 +25,7 @@ def sync_statcollector(statcollector: StatCollector):
         statcollector.save(no_sync=True)
 
     response = ext_create_statcollector(statcollector)
+    print("creating", response.status_code, response.text)
     if response.status_code == HTTPStatus.CONFLICT:
         pattern = r"Conflict: statistics collector with name .+ and client .+ with id ([\w-]+) already exists"
         match = re.match(pattern, response.text)
@@ -52,8 +53,8 @@ def ext_create_statcollector(statcollector: StatCollector):
 
 
 def ext_url(statcollector: StatCollector):
-    url, headers = get_base_url_headers()
-    return url + f"/{statcollector.external_id}"
+    url = settings.STAT_COLLECTOR_EXT_URL
+    return url + f"/statistics_collector/{statcollector.external_id}"
 
 
 def ext_read_stats(statcollector: StatCollector):
