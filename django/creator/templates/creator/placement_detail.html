@@ -1,0 +1,85 @@
+{% extends 'creator/statcollector_detail.html' %}
+{% block placement %}
+    {% load bootstrap_icons %}
+    {% load bootstrap5 %}
+
+
+    <div align="right">
+        <a
+                class="btn btn-outline-primary"
+                title="Edit"
+                href="{% url 'creator:placement_edit' statcollector.id placement.id %}"
+        >{% bs_icon 'pencil' size='1.5em' %}</a>
+        <a
+                class="btn btn-outline-danger delete-btn"
+                title="Delete"
+                data-bs-toggle="modal"
+                data-bs-target="#confirmDeleteModal"
+                data-item-id="{{ placement.id }}"
+                data-item-name="{{ placement.type }}"
+        >{% bs_icon 'trash' size='1.5em' %}</a>
+    </div>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Suppliers</th>
+            <th scope="col">Statistics</th>
+            <th scope="col">Copies</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>
+                <ul>
+                    {% for supplier in placement.suppliers.all %}
+                        <li>{{ supplier }}</li>
+                    {% endfor %}
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    {% for statistic in placement.statistics.all %}
+                        <li>{{ statistic }}</li>
+                    {% endfor %}
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    {% for copy in placement.copies.all %}
+                        <li>{{ copy }}</li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <script>
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+            const deleteUrl = "{% url 'creator:placement_details' stat_id=statcollector.id placement_id=placement.id %}";
+            const successUrl = "{% url 'creator:statcollector_details' stat_id=statcollector.id %}";
+            fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+            })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = successUrl;
+                    } else {
+                        console.error('Delete failed:', response.statusText);
+                        alert('Delete failed. Please try again.');
+                        $('#confirmDeleteModal').modal('hide');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: Delete failed due to an error. Please try again.');
+                    $('#confirmDeleteModal').modal('hide');
+                });
+        });
+    </script>
+
+{% endblock %}

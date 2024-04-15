@@ -10,12 +10,30 @@ services:
          condition: service_healthy
     env_file:
       - .env
+
+  django:
+    build:
+      context: ./django
+    ports:
+      - "81:8000"
+    depends_on:
+       db:
+         condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - STAT_COLLECTOR_INT_URL=http://host.docker.internal:80
+    command: >
+      sh -c "./wait-for-it.sh db:5432 -- python manage.py migrate && python manage.py my_superuser && python manage.py runserver 0.0.0.0:8000"
+
+
   db:
     image: postgres:16
     restart: always
     user: postgres
     volumes:
      - db-data:/var/lib/postgresql/data
+     - ./django/init_db:/docker-entrypoint-initdb.d
     environment:
      - POSTGRES_DB
      - POSTGRES_USER
