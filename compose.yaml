@@ -33,7 +33,6 @@ services:
     user: postgres
     volumes:
      - db-data:/var/lib/postgresql/data
-     - ./django/init_db:/docker-entrypoint-initdb.d
     environment:
      - POSTGRES_DB
      - POSTGRES_USER
