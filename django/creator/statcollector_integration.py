@@ -25,7 +25,7 @@ def sync_statcollector(statcollector: StatCollector):
         statcollector.save(no_sync=True)
 
     response = ext_create_statcollector(statcollector)
-    print("creating", response.status_code, response.text)
+    # print("creating", response.status_code, response.text)
     if response.status_code == HTTPStatus.CONFLICT:
         pattern = r"Conflict: statistics collector with name .+ and client .+ with id ([\w-]+) already exists"
         match = re.match(pattern, response.text)
